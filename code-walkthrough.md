@@ -23,6 +23,257 @@ records which hops have been walked.
 
 One question, with a state chosen, through eight hops.
 
+The whole path on one page. Each box down the left is a function on the main
+line, and the thick arrow is the call that carries the request onward. The
+boxes to its right are the important calls it makes along the way. Colours mark
+where the code runs: blue in the browser, grey at the edge, green in the
+worker, orange on the way back. Click a box to see its code.
+
+```mermaid
+flowchart TB
+  subgraph g0[" "]
+    direction LR
+    n1["<b>submit</b><br/>The box's send routine: it runs the gate, sends the question, and handles each kind of reply.<br/><small><i>AskBox.tsx:355</i></small>"]:::browser
+    n2("<b>beforeSend</b><br/>Decides whether the question may go: a free one left this week, a code that can pay, or the buy pop-up.<br/><small><i>Ask.tsx:197</i></small>"):::fn
+    n1 --> n2
+    n3("<b>challenge</b><br/>Waits for Cloudflare's Turnstile token, which proves to the worker that a person is asking.<br/><small><i>turnstile.ts:48</i></small>"):::fn
+    n1 --> n3
+  end
+  subgraph g1[" "]
+    direction LR
+    n4["<b>send</b><br/>The screen's handler, passed in as a prop: it counts a free question, adds the state and code, and calls the API.<br/><small><i>Ask.tsx:218</i></small>"]:::browser
+    n5("<b>recordAsk</b><br/>Counts this free question against the browser's weekly limit in local storage.<br/><small><i>ask-quota.ts:68</i></small>"):::fn
+    n4 --> n5
+  end
+  subgraph g2[" "]
+    direction LR
+    n6["<b>askLearners</b><br/>Names the endpoint and the request shape for the ask box.<br/><small><i>api.ts:270</i></small>"]:::browser
+  end
+  subgraph g3[" "]
+    direction LR
+    n7["<b>post</b><br/>POSTs the JSON and returns the parsed reply, or null when it could not connect.<br/><small><i>api.ts:57</i></small>"]:::browser
+  end
+  subgraph g4[" "]
+    direction LR
+    n8["<b>onRequest</b><br/>Runs first on every request and sends stray hostnames and path spellings to the canonical address.<br/><small><i>_middleware.ts:39</i></small>"]:::edge
+    n9("<b>redirectTo</b><br/>Gives the host to 302 to when the site was reached by another name.<br/><small><i>canonical.ts:38</i></small>"):::fn
+    n8 --> n9
+    n10("<b>canonicalPath</b><br/>Gives the canonical spelling of a path, to 308 to.<br/><small><i>paths.ts:70</i></small>"):::fn
+    n8 --> n10
+  end
+  subgraph g5[" "]
+    direction LR
+    n11["<b>onRequest</b><br/>Forwards /api/* from the site's own address to the worker, so Safari sees one site and drops nothing.<br/><small><i>[[path]].ts:40</i></small>"]:::edge
+    n12("<b>withVisitorGeo</b><br/>Copies the visitor's location onto the forwarded request, so the worker sees the visitor and not the edge.<br/><small><i>edge-geo.ts:70</i></small>"):::fn
+    n11 --> n12
+  end
+  subgraph g6[" "]
+    direction LR
+    n13["<b>fetch: /api/ask</b><br/>Routes the request and builds the pipeline's parts from the worker's bindings and keys.<br/><small><i>index.ts:278</i></small>"]:::worker
+  end
+  subgraph g7[" "]
+    direction LR
+    n14["<b>handleLearnersAsk</b><br/>Guards the door: it validates, scrubs, checks payment and limits, then records the turn.<br/><small><i>learner-api.ts:203</i></small>"]:::worker
+    n15("<b>readAsk</b><br/>Validates the request body and turns it into a typed question, or an error.<br/><small><i>learner-api.ts:105</i></small>"):::fn
+    n14 --> n15
+    n16("<b>scrub</b><br/>Removes codes, ids, e-mail addresses and phone numbers before anything stores or reads the question.<br/><small><i>validate.ts:125</i></small>"):::fn
+    n14 --> n16
+    n17("<b>turnsOf</b><br/>Reads this conversation's earlier turns from D1, so the model sees the thread.<br/><small><i>learner-api.ts:135</i></small>"):::fn
+    n14 --> n17
+    n18("<b>pastCeiling</b><br/>Checks the site-wide daily limit on free questions. A paid question checks its balance instead.<br/><small><i>learner-api.ts:159</i></small>"):::fn
+    n14 --> n18
+    n19("<b>verifyTurnstile</b><br/>Asks Cloudflare whether the browser's token is real, on a conversation's first turn.<br/><small><i>turnstile.ts:31</i></small>"):::fn
+    n14 --> n19
+    n20("<b>debit</b><br/>Takes a paid question's tokens in one conditional UPDATE, so two devices cannot both spend the last one.<br/><small><i>questions.ts:145</i></small>"):::fn
+    n14 --> n20
+    n21("<b>claimTurn</b><br/>Purges old rows and inserts this turn, which also stops a double submit.<br/><small><i>learner-api.ts:172</i></small>"):::fn
+    n14 --> n21
+  end
+  subgraph g8[" "]
+    direction LR
+    n22["<b>answerLearner</b><br/>The RAG pipeline: it finds the laws, asks the model, and checks the answer.<br/><small><i>learner-ask.ts:1200</i></small>"]:::worker
+    n23("<b>lawsFor</b><br/>Fetches the state's published law file, the source of every word the box shows.<br/><small><i>index.ts:1159</i></small>"):::fn
+    n22 --> n23
+    n24("<b>nearLaws</b><br/>Embeds the question and asks Vectorize for the state's laws closest in meaning.<br/><small><i>law-vectors.ts:62</i></small>"):::fn
+    n22 --> n24
+    n25("<b>rephrase</b><br/>Has Haiku reword the question in the law's own words, so retrieval can find it.<br/><small><i>law-rephrase.ts:96</i></small>"):::fn
+    n22 --> n25
+    n26("<b>retrieve</b><br/>Ranks the state's laws by fusing the word and meaning rankings into one list.<br/><small><i>law-retrieval.ts:148</i></small>"):::fn
+    n22 --> n26
+    n27("<b>bm25</b><br/>Scores each law by how well its words match the question's.<br/><small><i>law-retrieval.ts:233</i></small>"):::fn
+    n26 --> n27
+    n28("<b>chooseLaws</b><br/>Reranks the pool and keeps the three laws most likely to answer.<br/><small><i>law-rerank.ts:174</i></small>"):::fn
+    n22 --> n28
+    n29("<b>wholeSections</b><br/>Adds the other subsections of each chosen law's section, so its penalty and defence are visible.<br/><small><i>learner-ask.ts:1021</i></small>"):::fn
+    n22 --> n29
+    n30("<b>withPenalties</b><br/>Adds the court's fine schedule rows for those sections, so the model can say what it costs.<br/><small><i>learner-ask.ts:1080</i></small>"):::fn
+    n22 --> n30
+    n31("<b>askLearner</b><br/>Sends the question, the thread and the chosen laws to Opus, and reads its reply.<br/><small><i>learner-ask.ts:338</i></small>"):::fn
+    n22 --> n31
+    n32("<b>learnerRequestFor</b><br/>Builds the API request: the rules, the cached book, the thread, then the laws.<br/><small><i>learner-ask.ts:277</i></small>"):::fn
+    n31 --> n32
+    n33("<b>learnerReplyFrom</b><br/>Parses the model's JSON reply, or names why it could not.<br/><small><i>learner-ask.ts:314</i></small>"):::fn
+    n31 --> n33
+    n34("<b>checkLawAnswer</b><br/>Accepts the answer only if every figure and source traces back to a law it was given.<br/><small><i>learner-ask.ts:743</i></small>"):::fn
+    n22 --> n34
+    n35("<b>figuresIn</b><br/>Finds every number in a text, in digits or in words, for the grounding check.<br/><small><i>learner-ask.ts:605</i></small>"):::fn
+    n34 --> n35
+    n36("<b>lawPointerFor</b><br/>Writes the worker's own one-sentence refusal when an answer fails the check.<br/><small><i>learner-ask.ts:805</i></small>"):::fn
+    n22 --> n36
+  end
+  subgraph g9[" "]
+    direction LR
+    n37["<b>handleLearnersAsk</b><br/>Settles the turn: it refunds an outage, records what was shown, and responds.<br/><small><i>learner-api.ts:286</i></small>"]:::back
+    n38("<b>refund</b><br/>Gives a paid question's tokens back when the failure was ours, not the law's.<br/><small><i>questions.ts:158</i></small>"):::fn
+    n37 --> n38
+    n39("<b>UPDATE row</b><br/>Stores what the learner was actually shown, which is what the next turn replays.<br/><small><i>learner-api.ts:288</i></small>"):::fn
+    n37 --> n39
+    n40("<b>json(...)</b><br/>Sends the answer or the refusal back as the HTTP response.<br/><small><i>learner-api.ts:291</i></small>"):::fn
+    n37 --> n40
+  end
+  subgraph g10[" "]
+    direction LR
+    n41["<b>submit</b><br/>Resumes after the await and routes the reply: trouble, buy, choose a state, or a new card.<br/><small><i>AskBox.tsx:373</i></small>"]:::back
+    n42("<b>settle</b><br/>Adds the exchange to the on-screen thread and folds the earlier cards.<br/><small><i>AskBox.tsx:366</i></small>"):::fn
+    n41 --> n42
+  end
+  subgraph g11[" "]
+    direction LR
+    n43["<b>Answer</b><br/>Draws the answer card, with its sources line and the laws one tap away.<br/><small><i>AskBox.tsx:688</i></small>"]:::back
+    n44("<b>sourcesLine</b><br/>Folds the citations into one line naming the manual pages and code sections.<br/><small><i>sources-line.ts:27</i></small>"):::fn
+    n43 --> n44
+  end
+  g0 ==> g1
+  g1 ==> g2
+  g2 ==> g3
+  g3 ==> g4
+  g4 ==> g5
+  g5 ==> g6
+  g6 ==> g7
+  g7 ==> g8
+  g8 ==> g9
+  g9 ==> g10
+  g10 ==> g11
+  classDef browser fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:2px
+  classDef edge fill:#e5e7eb,stroke:#4b5563,color:#0f172a,stroke-width:2px
+  classDef worker fill:#dcfce7,stroke:#16a34a,color:#0f172a,stroke-width:2px
+  classDef back fill:#ffedd5,stroke:#ea580c,color:#0f172a,stroke-width:2px
+  classDef fn fill:#ffffff,stroke:#94a3b8,color:#334155
+  style g0 fill:transparent,stroke:transparent
+  style g1 fill:transparent,stroke:transparent
+  style g2 fill:transparent,stroke:transparent
+  style g3 fill:transparent,stroke:transparent
+  style g4 fill:transparent,stroke:transparent
+  style g5 fill:transparent,stroke:transparent
+  style g6 fill:transparent,stroke:transparent
+  style g7 fill:transparent,stroke:transparent
+  style g8 fill:transparent,stroke:transparent
+  style g9 fill:transparent,stroke:transparent
+  style g10 fill:transparent,stroke:transparent
+  style g11 fill:transparent,stroke:transparent
+  click n1 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/components/AskBox.tsx#L355" "Open AskBox.tsx at line 355"
+  click n2 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/screens/Ask.tsx#L197" "Open Ask.tsx at line 197"
+  click n3 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/components/turnstile.ts#L48" "Open turnstile.ts at line 48"
+  click n4 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/screens/Ask.tsx#L218" "Open Ask.tsx at line 218"
+  click n5 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/ask-quota.ts#L68" "Open ask-quota.ts at line 68"
+  click n6 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/api.ts#L270" "Open api.ts at line 270"
+  click n7 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/api.ts#L57" "Open api.ts at line 57"
+  click n8 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/functions/_middleware.ts#L39" "Open _middleware.ts at line 39"
+  click n9 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/functions/canonical.ts#L38" "Open canonical.ts at line 38"
+  click n10 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/functions/paths.ts#L70" "Open paths.ts at line 70"
+  click n11 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/functions/api/%5B%5Bpath%5D%5D.ts#L40" "Open [[path]].ts at line 40"
+  click n12 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/functions/edge-geo.ts#L70" "Open edge-geo.ts at line 70"
+  click n13 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/index.ts#L278" "Open index.ts at line 278"
+  click n14 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L203" "Open learner-api.ts at line 203"
+  click n15 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L105" "Open learner-api.ts at line 105"
+  click n16 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/validate.ts#L125" "Open validate.ts at line 125"
+  click n17 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L135" "Open learner-api.ts at line 135"
+  click n18 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L159" "Open learner-api.ts at line 159"
+  click n19 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/turnstile.ts#L31" "Open turnstile.ts at line 31"
+  click n20 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/questions.ts#L145" "Open questions.ts at line 145"
+  click n21 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L172" "Open learner-api.ts at line 172"
+  click n22 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L1200" "Open learner-ask.ts at line 1200"
+  click n23 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/index.ts#L1159" "Open index.ts at line 1159"
+  click n24 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/law-vectors.ts#L62" "Open law-vectors.ts at line 62"
+  click n25 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/law-rephrase.ts#L96" "Open law-rephrase.ts at line 96"
+  click n26 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/law-retrieval.ts#L148" "Open law-retrieval.ts at line 148"
+  click n27 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/law-retrieval.ts#L233" "Open law-retrieval.ts at line 233"
+  click n28 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/law-rerank.ts#L174" "Open law-rerank.ts at line 174"
+  click n29 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L1021" "Open learner-ask.ts at line 1021"
+  click n30 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L1080" "Open learner-ask.ts at line 1080"
+  click n31 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L338" "Open learner-ask.ts at line 338"
+  click n32 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L277" "Open learner-ask.ts at line 277"
+  click n33 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L314" "Open learner-ask.ts at line 314"
+  click n34 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L743" "Open learner-ask.ts at line 743"
+  click n35 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L605" "Open learner-ask.ts at line 605"
+  click n36 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-ask.ts#L805" "Open learner-ask.ts at line 805"
+  click n37 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L286" "Open learner-api.ts at line 286"
+  click n38 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/questions.ts#L158" "Open questions.ts at line 158"
+  click n39 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L288" "Open learner-api.ts at line 288"
+  click n40 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/worker/src/learner-api.ts#L291" "Open learner-api.ts at line 291"
+  click n41 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/components/AskBox.tsx#L373" "Open AskBox.tsx at line 373"
+  click n42 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/components/AskBox.tsx#L366" "Open AskBox.tsx at line 366"
+  click n43 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/components/AskBox.tsx#L688" "Open AskBox.tsx at line 688"
+  click n44 href "https://github.com/AiFirstDevelopment/howards-lantern-rag-pipeline/blob/7728a293ae9ed8ef69bf956d438b3089bb000b2b/src/sources-line.ts#L27" "Open sources-line.ts at line 27"
+```
+
+Clicking a box in VS Code's preview opens those lines on GitHub, pinned to
+the commit the line numbers were taken from. A diagram link cannot open the
+file in the editor: Mermaid keeps only web links, and VS Code opens only web
+links from a preview. The same steps as a table, whose links open the file in
+the editor:
+
+| Step | What it is and does | Code |
+|---|---|---|
+| *browser* | | |
+| **submit** | The box's send routine: it runs the gate, sends the question, and handles each kind of reply. | [AskBox.tsx:355](src/components/AskBox.tsx#L355) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ beforeSend | Decides whether the question may go: a free one left this week, a code that can pay, or the buy pop-up. | [Ask.tsx:197](src/screens/Ask.tsx#L197) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ challenge | Waits for Cloudflare's Turnstile token, which proves to the worker that a person is asking. | [turnstile.ts:48](src/components/turnstile.ts#L48) |
+| **send** | The screen's handler, passed in as a prop: it counts a free question, adds the state and code, and calls the API. | [Ask.tsx:218](src/screens/Ask.tsx#L218) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ recordAsk | Counts this free question against the browser's weekly limit in local storage. | [ask-quota.ts:68](src/ask-quota.ts#L68) |
+| **askLearners** | Names the endpoint and the request shape for the ask box. | [api.ts:270](src/api.ts#L270) |
+| **post** | POSTs the JSON and returns the parsed reply, or null when it could not connect. | [api.ts:57](src/api.ts#L57) |
+| *edge (cloudflare pages)* | | |
+| **onRequest** | Runs first on every request and sends stray hostnames and path spellings to the canonical address. | [_middleware.ts:39](functions/_middleware.ts#L39) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ redirectTo | Gives the host to 302 to when the site was reached by another name. | [canonical.ts:38](functions/canonical.ts#L38) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ canonicalPath | Gives the canonical spelling of a path, to 308 to. | [paths.ts:70](functions/paths.ts#L70) |
+| **onRequest** | Forwards /api/* from the site's own address to the worker, so Safari sees one site and drops nothing. | [[[path]].ts:40](functions/api/[[path]].ts#L40) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ withVisitorGeo | Copies the visitor's location onto the forwarded request, so the worker sees the visitor and not the edge. | [edge-geo.ts:70](functions/edge-geo.ts#L70) |
+| *worker* | | |
+| **fetch: /api/ask** | Routes the request and builds the pipeline's parts from the worker's bindings and keys. | [index.ts:278](worker/src/index.ts#L278) |
+| **handleLearnersAsk** | Guards the door: it validates, scrubs, checks payment and limits, then records the turn. | [learner-api.ts:203](worker/src/learner-api.ts#L203) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ readAsk | Validates the request body and turns it into a typed question, or an error. | [learner-api.ts:105](worker/src/learner-api.ts#L105) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ scrub | Removes codes, ids, e-mail addresses and phone numbers before anything stores or reads the question. | [validate.ts:125](worker/src/validate.ts#L125) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ turnsOf | Reads this conversation's earlier turns from D1, so the model sees the thread. | [learner-api.ts:135](worker/src/learner-api.ts#L135) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ pastCeiling | Checks the site-wide daily limit on free questions. A paid question checks its balance instead. | [learner-api.ts:159](worker/src/learner-api.ts#L159) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ verifyTurnstile | Asks Cloudflare whether the browser's token is real, on a conversation's first turn. | [turnstile.ts:31](worker/src/turnstile.ts#L31) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ debit | Takes a paid question's tokens in one conditional UPDATE, so two devices cannot both spend the last one. | [questions.ts:145](worker/src/questions.ts#L145) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ claimTurn | Purges old rows and inserts this turn, which also stops a double submit. | [learner-api.ts:172](worker/src/learner-api.ts#L172) |
+| **answerLearner** | The RAG pipeline: it finds the laws, asks the model, and checks the answer. | [learner-ask.ts:1200](worker/src/learner-ask.ts#L1200) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ lawsFor | Fetches the state's published law file, the source of every word the box shows. | [index.ts:1159](worker/src/index.ts#L1159) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ nearLaws | Embeds the question and asks Vectorize for the state's laws closest in meaning. | [law-vectors.ts:62](worker/src/law-vectors.ts#L62) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ rephrase | Has Haiku reword the question in the law's own words, so retrieval can find it. | [law-rephrase.ts:96](worker/src/law-rephrase.ts#L96) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ retrieve | Ranks the state's laws by fusing the word and meaning rankings into one list. | [law-retrieval.ts:148](worker/src/law-retrieval.ts#L148) |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ bm25 | Scores each law by how well its words match the question's. | [law-retrieval.ts:233](worker/src/law-retrieval.ts#L233) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ chooseLaws | Reranks the pool and keeps the three laws most likely to answer. | [law-rerank.ts:174](worker/src/law-rerank.ts#L174) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ wholeSections | Adds the other subsections of each chosen law's section, so its penalty and defence are visible. | [learner-ask.ts:1021](worker/src/learner-ask.ts#L1021) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ withPenalties | Adds the court's fine schedule rows for those sections, so the model can say what it costs. | [learner-ask.ts:1080](worker/src/learner-ask.ts#L1080) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ askLearner | Sends the question, the thread and the chosen laws to Opus, and reads its reply. | [learner-ask.ts:338](worker/src/learner-ask.ts#L338) |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ learnerRequestFor | Builds the API request: the rules, the cached book, the thread, then the laws. | [learner-ask.ts:277](worker/src/learner-ask.ts#L277) |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ learnerReplyFrom | Parses the model's JSON reply, or names why it could not. | [learner-ask.ts:314](worker/src/learner-ask.ts#L314) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ checkLawAnswer | Accepts the answer only if every figure and source traces back to a law it was given. | [learner-ask.ts:743](worker/src/learner-ask.ts#L743) |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ figuresIn | Finds every number in a text, in digits or in words, for the grounding check. | [learner-ask.ts:605](worker/src/learner-ask.ts#L605) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ lawPointerFor | Writes the worker's own one-sentence refusal when an answer fails the check. | [learner-ask.ts:805](worker/src/learner-ask.ts#L805) |
+| *back up the same path* | | |
+| **handleLearnersAsk** | Settles the turn: it refunds an outage, records what was shown, and responds. | [learner-api.ts:286](worker/src/learner-api.ts#L286) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ refund | Gives a paid question's tokens back when the failure was ours, not the law's. | [questions.ts:158](worker/src/questions.ts#L158) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ UPDATE row | Stores what the learner was actually shown, which is what the next turn replays. | [learner-api.ts:288](worker/src/learner-api.ts#L288) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ json(...) | Sends the answer or the refusal back as the HTTP response. | [learner-api.ts:291](worker/src/learner-api.ts#L291) |
+| **submit** | Resumes after the await and routes the reply: trouble, buy, choose a state, or a new card. | [AskBox.tsx:373](src/components/AskBox.tsx#L373) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ settle | Adds the exchange to the on-screen thread and folds the earlier cards. | [AskBox.tsx:366](src/components/AskBox.tsx#L366) |
+| **Answer** | Draws the answer card, with its sources line and the laws one tap away. | [AskBox.tsx:688](src/components/AskBox.tsx#L688) |
+| &nbsp;&nbsp;&nbsp;&nbsp;↳ sourcesLine | Folds the citations into one line naming the manual pages and code sections. | [sources-line.ts:27](src/sources-line.ts#L27) |
+
 ### Hop 1: the browser sends the question
 
 **Where:** the screen, [src/screens/Ask.tsx](src/screens/Ask.tsx), draws the
