@@ -93,7 +93,7 @@ The box answers only from what the repository committed and checked. The scripts
 
 The manifests are hashed and the unit tests recompute them, so a corpus change deployed without a store or embed push is a red test, not a nationwide answer quoting a law as it used to read.
 
-The eval is deliberately not part of the test suite: it costs money and is not deterministic. The worker suite (`worker/tests/`) injects a scripted model and drives everything around it in workerd; the Playwright suite (`tests/e2e/`) drives the built app with `/api/ask` stubbed at the network edge.
+The eval is deliberately not part of the test suite: it costs money and is not deterministic. How its golden set was built and what the harness does: [eval.md](eval.md). The worker suite (`worker/tests/`) injects a scripted model and drives everything around it in workerd; the Playwright suite (`tests/e2e/`) drives the built app with `/api/ask` stubbed at the network edge.
 
 ## What is here
 
