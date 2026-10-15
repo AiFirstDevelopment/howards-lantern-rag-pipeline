@@ -51,7 +51,7 @@ follow-up ("and on a tablet?") is tested as a follow-up.
 ### How it was built
 
 The set was not written in one sitting and it was not generated from the
-corpus. It grew one pull request at a time, in Claude Code sessions, alongside
+corpus. It grew one pull request at a time, alongside
 the behaviour each PR added — so every case was written by somebody who had
 just read the source it tests against. The git history of the file shows the
 shape of that:
