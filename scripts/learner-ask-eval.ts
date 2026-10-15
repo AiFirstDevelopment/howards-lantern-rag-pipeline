@@ -190,8 +190,7 @@ async function main(): Promise<number> {
   if (fixture.cases.length === 0) throw new Error(`no cases for ${only}`)
   // The whole run is asked for by name. It is live Opus and Haiku for every
   // case -- about ten dollars at 130 cases -- and on 2026-10-10 it was run
-  // five times in a day between a session and two builders, which emptied the
-  // account twice. Iterating is `--state XX`; the whole run is once per PR.
+  // five times in a day, which emptied the account twice. Iterating is `--state XX`; the whole run is once per PR.
   if (only === undefined && !argv.includes('--all')) {
     console.error(`${fixture.cases.length} cases, every one a live model call. Iterate with --state XX; run the whole fixture once per PR with --all.`)
     return 2

@@ -771,7 +771,7 @@ async function handleReferral(
        * -- `git grep branded origin/main -- src worker` is empty. It is kept
        * because of the worker this one replaces, which has no `private_branding`
        * column and sends `partner` for every live code. Pages and the worker
-       * deploy as two steps, and the second is the one CLAUDE.md says is quiet
+       * deploy as two steps, and the second is the quiet one
        * to forget; a client that inferred branding from `partner !== null` would
        * then put every partner's name at the top of every screen, with no switch
        * in existence to take it back down. An absent flag reads as false, which

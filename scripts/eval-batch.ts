@@ -10,8 +10,7 @@
  * endpoint answer null for everyone.
  *
  * Why: the whole eval is 130 live Opus calls, about ten dollars, and on
- * 2026-10-10 it was run five times in a day between a session and two
- * builders. A batch is the same request (`learnerRequestFor`, the worker's
+ * 2026-10-10 it was run five times in a day. A batch is the same request (`learnerRequestFor`, the worker's
  * own) and the same reading of the answer (`learnerReplyFrom`), billed at
  * half, with the cases no longer waiting on one another.
  */
