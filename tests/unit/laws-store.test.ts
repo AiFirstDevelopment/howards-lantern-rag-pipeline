@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MANIFEST_FILE, TABLE, fingerprint, lawsOf, readManifest, run, sectionOf, statesOf, type Store } from '../../scripts/laws-store'
+import { EVAL_TIMEOUT_MS, FIXTURE_FILE, figuresOf, harnessEval, withFigures, type Spawn, type StateEval } from '../../scripts/push-eval'
 import { STORE_STATEMENT_BYTES, storeStatements } from '../../worker/src/law-nationwide'
 
 /**
@@ -73,12 +74,133 @@ describe('npm run laws:store', () => {
       // One row the corpus still holds and one it has dropped.
       ids: async (state) => (asked.push(state), [lawsOf(root, 'DC')[0].id, 'DC-gone']),
     })
-    expect(await run(root, ['--push'], { manifestFile: file, store, log: () => {} })).toBe(0)
+    // --no-eval: this test is about what is written to the table; the eval a
+    // push ends with is the describe block below.
+    expect(await run(root, ['--push', '--no-eval'], { manifestFile: file, store, log: () => {} })).toBe(0)
     expect(asked).toEqual(['DC'])
     const inserts = written.filter((sql) => sql.startsWith('INSERT'))
     expect(inserts).toEqual(storeStatements('DC', lawsOf(root, 'DC')))
     expect(written.filter((sql) => sql.startsWith('DELETE'))).toEqual([`DELETE FROM laws WHERE state = 'DC' AND id IN ('DC-gone')`])
     expect(readFileSync(file, 'utf8')).toBe(committed)
+  })
+})
+
+/**
+ * The retrieval eval a push ends with (docs/plans/eval-lifecycle-build.md,
+ * decision 35, criterion 33, guard 23). The manifest is where somebody reads
+ * how well a state retrieves after its corpus moved, so the failure worth a
+ * test is a figure that is not a measurement: a recall of 1.0 for a state
+ * with nothing to score reads as the best state in the file, and a push that
+ * kept the last corpus's figures beside the new hash vouches for a corpus
+ * nobody measured.
+ */
+describe('the eval a push ends with', () => {
+  const root = process.cwd()
+  const committed = readFileSync(path.join(root, MANIFEST_FILE), 'utf8')
+  function staleManifest(figures?: { evalRecall: number | null; evalMrr: number | null }): string {
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'laws-store-eval-')), 'laws-store.json')
+    const edited = JSON.parse(committed) as { states: Record<string, { sha256: string }> }
+    edited.states.DC = { ...edited.states.DC, sha256: 'a law changed since this was pushed', ...figures }
+    writeFileSync(file, JSON.stringify(edited, null, 2) + '\n')
+    return file
+  }
+  const store = (): Store => ({ run: async () => {}, ids: async () => [] })
+  const dc = lawsOf(root, 'DC')
+  const pushDC = async (args: string[], evaluate: (state: string) => StateEval, file: string) => {
+    const lines: string[] = []
+    const asked: string[] = []
+    // `--all DC` pushes DC whatever the manifest says, without hashing every
+    // other state to find it stale: that walk is seconds a test, and a file
+    // that runs long in one worker is what timed the suite's RPC out before.
+    const code = await run(root, ['--push', '--all', 'DC', ...args], {
+      manifestFile: file,
+      store,
+      log: (line) => lines.push(line),
+      evaluate: (state) => (asked.push(state), evaluate(state)),
+    })
+    return { code, lines, asked, entry: readManifest(file).states.DC }
+  }
+
+  it('writes the state’s recall and MRR beside the hash it just pushed', async () => {
+    const pushed = await pushDC([], () => ({ evalRecall: 0.75, evalMrr: 0.412 }), staleManifest())
+    expect(pushed.code).toBe(0)
+    expect(pushed.asked).toEqual(['DC'])
+    expect(pushed.entry).toEqual({ laws: dc.length, sha256: fingerprint('DC', dc), evalRecall: 0.75, evalMrr: 0.412 })
+    expect(pushed.lines).toContain('DC: retrieval eval recall@pool 0.75, MRR 0.412')
+  })
+
+  it('writes null and says why when there was nothing to score, rather than keeping the last corpus’s figures', async () => {
+    const pushed = await pushDC([], () => ({ evalRecall: null, evalMrr: null, why: 'no road-law case for DC' }), staleManifest({ evalRecall: 0.9, evalMrr: 0.8 }))
+    expect(pushed.code).toBe(0)
+    expect(pushed.entry.evalRecall).toBeNull()
+    expect(pushed.entry.evalMrr).toBeNull()
+    expect(pushed.lines).toContain('DC: eval not recorded (null) -- no road-law case for DC')
+  })
+
+  it('leaves the figures as they were with --no-eval, and runs no eval', async () => {
+    const pushed = await pushDC(['--no-eval'], () => ({ evalRecall: 0, evalMrr: 0 }), staleManifest({ evalRecall: 0.9, evalMrr: 0.8 }))
+    expect(pushed.asked).toEqual([])
+    expect(pushed.entry.evalRecall).toBe(0.9)
+    expect(pushed.entry.evalMrr).toBe(0.8)
+  })
+
+  it('keeps the push when the eval could not run: the rows are already in production, and an exit code would have somebody push again', async () => {
+    const pushed = await pushDC([], () => ({ evalRecall: null, evalMrr: null, why: 'the retrieval eval could not run (exit 2)' }), staleManifest())
+    expect(pushed.code).toBe(0)
+    expect(pushed.entry.sha256).toBe(fingerprint('DC', dc))
+    expect(pushed.entry.evalRecall).toBeNull()
+  })
+
+  it('scores a run that scored nothing as null, never as a perfect recall over no cases', () => {
+    expect(figuresOf({ scored: 0, recallAtPool: null, mrr: null })).toEqual({ evalRecall: null, evalMrr: null, why: 'no case with a gold law to score' })
+    expect(figuresOf({ scored: 4, recallAtPool: 0.75, mrr: 0.41234 })).toEqual({ evalRecall: 0.75, evalMrr: 0.412 })
+  })
+
+  it('keeps an absent figure absent under --no-eval, so a state never measured does not read as measured at null', () => {
+    expect(withFigures({ laws: 1, sha256: 'x' }, undefined, 'skipped')).toEqual({ laws: 1, sha256: 'x' })
+  })
+
+  // The harness is never run by the suite (each run costs model calls); what
+  // it decides before spawning one is what is tested here, over a fixture of
+  // its own.
+  describe('before the harness is asked', () => {
+    const fixtureRoot = (cases: unknown[]) => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'push-eval-root-'))
+      mkdirSync(path.join(dir, path.dirname(FIXTURE_FILE)), { recursive: true })
+      writeFileSync(path.join(dir, FIXTURE_FILE), JSON.stringify({ cases }))
+      return dir
+    }
+    const roadLaw = (state: string, extra: object = {}) => ({ lang: 'en', state, question: `q ${state}`, expect: { scope: 'road-law' }, ...extra })
+    const keyed = { ANTHROPIC_API_KEY: 'set' }
+
+    it('writes null for a state with no road-law case, naming the fixture', () => {
+      const dir = fixtureRoot([roadLaw('MD', { gold: ['MD-1'] }), roadLaw('DC', { retired: 'gone' }), roadLaw('DC', { holdout: true, gold: ['DC-1'] })])
+      expect(harnessEval(dir, keyed)('DC')).toEqual({ evalRecall: null, evalMrr: null, why: `no road-law case for DC in ${FIXTURE_FILE}` })
+    })
+
+    it('writes null for a state whose cases have no gold law, since recall needs one', () => {
+      const dir = fixtureRoot([roadLaw('DC'), roadLaw('DC')])
+      expect(harnessEval(dir, keyed)('DC')).toEqual({ evalRecall: null, evalMrr: null, why: '2 case(s) for DC, none with a gold law to score' })
+    })
+
+    it('stops a harness that runs past its time and writes null saying so, so a stuck eval cannot hold a finished push open', () => {
+      const dir = fixtureRoot([roadLaw('DC', { gold: ['DC-1'] })])
+      const asked: number[] = []
+      const timedOut: Spawn = (_command, _args, options) => {
+        asked.push(options.timeout)
+        return { status: null, signal: 'SIGTERM', error: Object.assign(new Error('spawnSync npx ETIMEDOUT'), { code: 'ETIMEDOUT' }) }
+      }
+      const result = harnessEval(dir, keyed, timedOut)('DC')
+      expect(asked).toEqual([EVAL_TIMEOUT_MS])
+      expect(result).toEqual({ evalRecall: null, evalMrr: null, why: 'the retrieval eval timed out after 45 minutes and was stopped' })
+    })
+
+    it('writes null without a model key rather than a figure for a pipeline with no rephraser', () => {
+      const dir = fixtureRoot([roadLaw('DC', { gold: ['DC-1'] })])
+      const result = harnessEval(dir, {})('DC')
+      expect(result.evalRecall).toBeNull()
+      expect(result.why).toMatch(/^ANTHROPIC_API_KEY is not set/)
+    })
   })
 })
 

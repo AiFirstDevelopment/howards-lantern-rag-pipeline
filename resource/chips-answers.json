@@ -62,6 +62,66 @@
       "model": "claude-opus-5-5"
     },
     {
+      "id": "hydrant-farthest",
+      "lang": "es",
+      "question": "¿Qué estado obliga a estacionar más lejos de un hidrante?",
+      "topics": [
+        "park-hydrant"
+      ],
+      "corpus": "2f270f0aa9fe10971d14491d802f892895690d2fd9bb1af9b8bce07efa7ee467",
+      "answer": "Nevada es el más estricto: si estacionas en ángulo, debes quedar a 20 pies del hidrante. Si estacionas en paralelo allí, son 15 pies. La mayoría de los estados piden 15 pies. Otros piden menos, como Connecticut con 10 pies o Iowa con 5.",
+      "sources": [
+        {
+          "id": "NV-258",
+          "location": "p.50 (printed) — 'Within 15 feet of a fire hydrant in a place where parallel parking is permitted or 20 feet of a fire hydrant if angle parking is permitted'",
+          "asOf": "2026-09-14",
+          "state": "Nevada"
+        },
+        {
+          "id": "CA-211",
+          "location": "p.28 (printed) — 'Within 15 feet of a fire hydrant or fire station driveway.'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "TX-381",
+          "location": "p.42 (printed) — 'Whether occupied or not, do not park or allow a vehicle to stand idling: 1. In front of a public or private driveway 2. Within 15 feet of a fire hydrant'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "FL-399",
+          "location": "p.66 (printed) — '15 feet of a fire hydrant.'",
+          "asOf": "2026-09-14",
+          "state": "Florida"
+        },
+        {
+          "id": "PA-292",
+          "location": "p.53 (printed) — 'Within 15 feet of a fire hydrant.'",
+          "asOf": "2026-09-06",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "CT-440",
+          "location": "p.37 (printed) — 'Some parking restrictions are indicated by colored curb markings. Do not park: • In an intersection. • On a crosswalk or sidewalk. • In a construction area if your vehicle will block traffic. • Within 25 feet of a stop sign. • Within 25 feet of a pedestrian safety zone. • Within 10 feet of a fire hydrant.'",
+          "asOf": "2026-09-14",
+          "state": "Connecticut"
+        },
+        {
+          "id": "IA-184",
+          "location": "p.21 (printed) — 'Closer than five feet from a fire hydrant;'",
+          "asOf": "2026-09-14",
+          "state": "Iowa"
+        }
+      ],
+      "absent": [
+        "Hawaii",
+        "Missouri"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
       "id": "hydrant-closest",
       "lang": "en",
       "question": "Where can you legally park closest to a fire hydrant?",
@@ -1539,6 +1599,87 @@
       "model": "claude-opus-5-5"
     },
     {
+      "id": "curb-distance",
+      "lang": "es",
+      "question": "¿Qué estado permite estacionar más lejos de la acera?",
+      "topics": [
+        "park-curb"
+      ],
+      "corpus": "e0a101fe1549158c997f239816c1691a0b75b0d4bc4fe8290c9b46a37d63847f",
+      "answer": "Ningún estado permite más de 18 pulgadas de la acera. Ese es el máximo en estados como California, Texas, Iowa, Idaho, Nevada y Tennessee. Muchos otros estados piden 12 pulgadas o menos, como Florida, Illinois y Michigan. New Jersey es el más estricto: 6 pulgadas como máximo.",
+      "sources": [
+        {
+          "id": "CA-194",
+          "location": "p.26 (printed) — ‘Straighten out. Begin turning the steering wheel away from the curb when your rear wheel is within 18 inches of the curb.’",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "TX-400",
+          "location": "p.44 (printed) — 'Do not park more than 18 inches from the curb or edge of the road'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "IA-178",
+          "location": "p.21 (printed) — 'If there is a curb, park within 18 inches of the curb or closer.'",
+          "asOf": "2026-09-14",
+          "state": "Iowa"
+        },
+        {
+          "id": "ID-424",
+          "location": "p.80 (printed) — 'you must park parallel to and\nwithin 18 inches of the curb or edge of the roadway'",
+          "asOf": "2026-09-14",
+          "state": "Idaho"
+        },
+        {
+          "id": "NV-241",
+          "location": "p.48 (printed) — 'The legal parking position is with the front and rear wheels within 18 inches of the curb.'",
+          "asOf": "2026-09-14",
+          "state": "Nevada"
+        },
+        {
+          "id": "TN-043",
+          "location": "p.29 (printed) — 'If stopping at a curb, move to within 18 inches of the curb for proper parking.'",
+          "asOf": "2026-09-14",
+          "state": "Tennessee"
+        },
+        {
+          "id": "FL-391",
+          "location": "p.65 (printed) — 'Park parallel to the curb in the direction of traffic, with right-hand wheels parallel to and within 12 inches of the curb or side of roadway.'",
+          "asOf": "2026-09-14",
+          "state": "Florida"
+        },
+        {
+          "id": "IL-231",
+          "location": "p.35 (printed) — 'When parking on streets with two-way traffic, park so the right-hand wheels are parallel to and within 12 inches of the curb.'",
+          "asOf": "2026-09-14",
+          "state": "Illinois"
+        },
+        {
+          "id": "MI-298",
+          "location": "p.38 (printed) — 'More than 12 inches from the curb.'",
+          "asOf": "2026-09-14",
+          "state": "Michigan"
+        },
+        {
+          "id": "NJ-082",
+          "location": "p.58 (printed) — 'The vehicle’s tires should be no more than six inches from the curb.'",
+          "asOf": "2026-09-14",
+          "state": "New Jersey"
+        }
+      ],
+      "absent": [
+        "Alaska",
+        "Alabama",
+        "Arizona",
+        "Georgia",
+        "North Carolina"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
       "id": "school-bus-divided",
       "lang": "en",
       "question": "When may you drive past a school bus with flashing red lights on a divided highway?",
@@ -1684,6 +1825,94 @@
     },
     {
       "id": "school-bus-distance",
+      "lang": "en",
+      "question": "How many feet from a stopped school bus must you stop in most states?",
+      "topics": [
+        "school-bus"
+      ],
+      "corpus": "eada2d9ad9a24eae19ae0748c2976f21bfd65b8709efd4962395294e2f1afd54",
+      "answer": "Most states just say you must stop before reaching the bus, without giving a distance. Where a distance is given, 20 feet is the most common, as in Colorado, Maryland, Michigan, Minnesota and DC. New Hampshire and New Jersey say at least 25 feet. Montana is the strictest at 30 feet. Ohio and Pennsylvania say 10 feet, and Iowa law says no closer than 15 feet.",
+      "sources": [
+        {
+          "id": "TX-199",
+          "location": "p.23 (printed) — 'bus from either direction and the bus is displaying alternately flashing red lights, you must stop'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "CO-263",
+          "location": "p.11 (printed) — ‘You must stop your vehicle at least 20 feet before reaching a school bus that is stopped with its red lights flashing, and you must stop until the lights stop flashing.’",
+          "asOf": "2026-09-14",
+          "state": "Colorado"
+        },
+        {
+          "id": "MD-164",
+          "location": "p.38 (printed) — 'Stop at least 20 feet from the back of the school bus, if you are behind it.'",
+          "asOf": "2026-09-06",
+          "state": "Maryland"
+        },
+        {
+          "id": "MI-187",
+          "location": "p.28 (printed) — 'Stop at least 20 feet from a school bus with its red overhead lights flashing'",
+          "asOf": "2026-09-14",
+          "state": "Michigan"
+        },
+        {
+          "id": "MN-383",
+          "location": "p.42 (printed) — 'you must stop your vehicle at least 20 feet from the bus'",
+          "asOf": "2026-09-14",
+          "state": "Minnesota"
+        },
+        {
+          "id": "DC-361",
+          "location": "p.66 (physical) — 'When a school vehicle is stopping or has stopped on the roadway, and is operating the alternating flashing red lights, all vehicles must stop at least 20 feet from the front or rear of the school vehicle.'",
+          "asOf": "2026-09-16",
+          "state": "District of Columbia"
+        },
+        {
+          "id": "NH-429",
+          "location": "p.27 (printed) — ‘Drivers must stop at least 25-feet in any direction for a school bus that is stopped with its red lights flashing and/or the stop arm extended at all times unless the roadway is separated by a physical barrier.’",
+          "asOf": "2026-09-14",
+          "state": "New Hampshire"
+        },
+        {
+          "id": "NJ-141",
+          "location": "p.77 (printed) — ‘State law requires a motorist to stop at least 25 feet away if they are traveling on a two-lane road or on a multi-lane highway where lanes are only separated by lines, or on a privately maintained road.’",
+          "asOf": "2026-09-14",
+          "state": "New Jersey"
+        },
+        {
+          "id": "MT-326",
+          "location": "p.40 (printed) — 'Upon meeting or passing from either direction any school bus stopped with its red lights flashing, the driver of a vehicle must stop at least 30 feet from the bus and cannot proceed until the red lights are turned off (Diagrams 1 and 2).'",
+          "asOf": "2026-09-14",
+          "state": "Montana"
+        },
+        {
+          "id": "OH-124",
+          "location": "p.29 (compiled) — 'If the bus is stopped on a street or road with fewer than four lanes, all traffic approaching the bus from either direction must stop at least 10 feet from the front or rear of the bus and remain stopped until the bus begins to move or the bus driver signals motorists to proceed.'",
+          "asOf": "2026-09-14",
+          "state": "Ohio"
+        },
+        {
+          "id": "PA-162",
+          "location": "p.58 (printed) — ‘you must stop at least 10 feet away from the bus whether you are behind it or coming toward it on the same roadway or approaching an intersection at which the school bus is stopped.’",
+          "asOf": "2026-09-06",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "IA-C-321.372-3-p2",
+          "location": "Iowa Code § 321.372(3) — 'b. The driver of a vehicle, including the driver of a vehicle operating on a private road or driveway, overtaking a school bus shall not pass a school bus when red or amber warning signal lights are flashing. The driver shall bring the vehicle to a complete stop no closer than fifteen feet from the school bus when it is stopped and the stop arm is extended, and the vehicle shall remain stopped until the stop arm is retracted and the school bus resumes motion.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Iowa"
+        }
+      ],
+      "absent": [],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "school-bus-distance",
       "lang": "es",
       "question": "¿A cuántos pies de un autobús escolar detenido hay que parar en la mayoría de los estados?",
       "topics": [
@@ -1798,6 +2027,212 @@
       ],
       "absent": [],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "move-over-slow",
+      "lang": "en",
+      "question": "How much must you slow down when passing a stopped emergency vehicle, state by state?",
+      "topics": [
+        "move-over"
+      ],
+      "corpus": "93aa9e4b319105f9a23bbdfbc6bdc62016ed1517107f8adc68c6c9cff487cb9c",
+      "answer": "Most states want you to move a lane away, or slow down and use caution if you can't. Some set a figure: Indiana, Michigan and Washington say at least 10 mph under the limit. Montana, Vermont and Pennsylvania say 20 mph under the limit, and Oregon says at least 5 mph under. Colorado says slow to 25 mph where the limit is 45 mph or less. South Dakota is strictest: you must come to a complete stop before reaching it.",
+      "sources": [
+        {
+          "id": "IN-249",
+          "location": "p.51 (printed) — 'If you cannot move over, the motorists shall reduce their speed to 10 mph under the posted limit and proceed with caution.'",
+          "asOf": "2026-09-14",
+          "state": "Indiana"
+        },
+        {
+          "id": "MI-179",
+          "location": "p.28 (printed) — 'The law requires you to slow down at least 10 mph below the posted speed limit and move over a lane if traffic and conditions allow.'",
+          "asOf": "2026-09-14",
+          "state": "Michigan"
+        },
+        {
+          "id": "WA-240",
+          "location": "p.143 (physical) — 'Slow down to at least 10 mph below the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Washington"
+        },
+        {
+          "id": "MT-735",
+          "location": "p.80 (printed) — 'On highways with a posted speed limit of 50 MPH or more, vehicles in a lane directly next to a stationary emergency or police vehicle displaying emergency signals must slow down to a speed of at least 20 miles below the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Montana"
+        },
+        {
+          "id": "VT-346",
+          "location": "p.51 (printed) — 'If you are unable to change lanes you must slow down to 20 mph below the speed limit in order to go by the stopped vehicles.'",
+          "asOf": "2026-09-14",
+          "state": "Vermont"
+        },
+        {
+          "id": "PA-C-3327-a",
+          "location": "75 Pa.C.S. § 3327(a) — '(a) Emergency response areas.--When approaching or passing an emergency response area, a person, unless otherwise directed by an emergency service responder, shall: (1) pass in a lane not adjacent to that of the emergency response area, if possible; or (2) if passing in a nonadjacent lane is impossible, illegal or unsafe, pass the emergency response area at a speed of no more than 20 miles per hour less than the posted speed limit and reasonable for safely passing the emergency response area.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "OR-211",
+          "location": "p.57 (printed) — 'you must change lanes so you do not drive next to the stopped vehicle. You may also slow down by at least 5 miles per hour under the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Oregon"
+        },
+        {
+          "id": "CO-256",
+          "location": "p.11 (printed) — '25 MPH if the posted speed limit is 45 MPH or less'",
+          "asOf": "2026-09-14",
+          "state": "Colorado"
+        },
+        {
+          "id": "SD-001",
+          "location": "p.2 (printed) — 'South Dakota law requires all motorists from any direction approaching an authorized emergency vehicle making use of red visual signals, to come to a complete stop before reaching the stopped emergency vehicle and may, unless otherwise directed, proceed with caution only after making sure it is safe to do so.'",
+          "asOf": "2026-09-14",
+          "state": "South Dakota"
+        },
+        {
+          "id": "AZ-290",
+          "location": "p.39 (printed) — 'If it’s not safe or possible to move over, motorists must slow down and use caution.'",
+          "asOf": "2026-09-14",
+          "state": "Arizona"
+        },
+        {
+          "id": "OK-188",
+          "location": "p.30 (printed) — 'When approaching any stationary vehicles with FLASHING LIGHTS pulled to the side of the road, drivers are REQUIRED to move over a lane, if safe to do so, or slow down and use caution.'",
+          "asOf": "2026-09-14",
+          "state": "Oklahoma"
+        },
+        {
+          "id": "VA-112",
+          "location": "p.16 (printed) — 'change to a lane not next to the vehicle. If you are unable to safely change lanes, reduce your speed and proceed with caution.'",
+          "asOf": "2026-09-06",
+          "state": "Virginia"
+        },
+        {
+          "id": "MD-151",
+          "location": "p.45 (printed) — 'If it is not safe or possible to move over, you must slow down to a safe speed.'",
+          "asOf": "2026-09-06",
+          "state": "Maryland"
+        }
+      ],
+      "absent": [
+        "Arkansas",
+        "Connecticut",
+        "District of Columbia",
+        "Florida",
+        "Georgia",
+        "New Jersey",
+        "Utah",
+        "West Virginia"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "move-over-slow",
+      "lang": "es",
+      "question": "¿Cuánto hay que reducir la velocidad al pasar un vehículo de emergencia detenido, estado por estado?",
+      "topics": [
+        "move-over"
+      ],
+      "corpus": "93aa9e4b319105f9a23bbdfbc6bdc62016ed1517107f8adc68c6c9cff487cb9c",
+      "answer": "En la mayoría de los estados, la regla es cambiarte a un carril que no esté junto al vehículo y bajar la velocidad con cuidado. Michigan pide al menos 10 mph menos que el límite, y Washington también. Indiana pide 10 mph menos si no puedes cambiar de carril. Montana pide al menos 20 mph menos, igual que Pennsylvania y Vermont si no puedes cambiarte; Oregon pide al menos 5 mph menos. En Colorado bajas a 25 mph si el límite es 45 mph o menos, y en South Dakota tienes que pararte por completo.",
+      "sources": [
+        {
+          "id": "MI-179",
+          "location": "p.28 (printed) — 'The law requires you to slow down at least 10 mph below the posted speed limit and move over a lane if traffic and conditions allow.'",
+          "asOf": "2026-09-14",
+          "state": "Michigan"
+        },
+        {
+          "id": "WA-240",
+          "location": "p.143 (physical) — 'Slow down to at least 10 mph below the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Washington"
+        },
+        {
+          "id": "IN-249",
+          "location": "p.51 (printed) — 'If you cannot move over, the motorists shall reduce their speed to 10 mph under the posted limit and proceed with caution.'",
+          "asOf": "2026-09-14",
+          "state": "Indiana"
+        },
+        {
+          "id": "MT-735",
+          "location": "p.80 (printed) — 'On highways with a posted speed limit of 50 MPH or more, vehicles in a lane directly next to a stationary emergency or police vehicle displaying emergency signals must slow down to a speed of at least 20 miles below the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Montana"
+        },
+        {
+          "id": "PA-C-3327-a",
+          "location": "75 Pa.C.S. § 3327(a) — '(a) Emergency response areas.--When approaching or passing an emergency response area, a person, unless otherwise directed by an emergency service responder, shall: (1) pass in a lane not adjacent to that of the emergency response area, if possible; or (2) if passing in a nonadjacent lane is impossible, illegal or unsafe, pass the emergency response area at a speed of no more than 20 miles per hour less than the posted speed limit and reasonable for safely passing the emergency response area.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "VT-346",
+          "location": "p.51 (printed) — 'If you are unable to change lanes you must slow down to 20 mph below the speed limit in order to go by the stopped vehicles.'",
+          "asOf": "2026-09-14",
+          "state": "Vermont"
+        },
+        {
+          "id": "OR-211",
+          "location": "p.57 (printed) — 'you must change lanes so you do not drive next to the stopped vehicle. You may also slow down by at least 5 miles per hour under the posted speed limit.'",
+          "asOf": "2026-09-14",
+          "state": "Oregon"
+        },
+        {
+          "id": "CO-256",
+          "location": "p.11 (printed) — '25 MPH if the posted speed limit is 45 MPH or less'",
+          "asOf": "2026-09-14",
+          "state": "Colorado"
+        },
+        {
+          "id": "SD-001",
+          "location": "p.2 (printed) — 'South Dakota law requires all motorists from any direction approaching an authorized emergency vehicle making use of red visual signals, to come to a complete stop before reaching the stopped emergency vehicle and may, unless otherwise directed, proceed with caution only after making sure it is safe to do so.'",
+          "asOf": "2026-09-14",
+          "state": "South Dakota"
+        },
+        {
+          "id": "CA-331",
+          "location": "p.45 (printed) — ‘When approaching a stationary emergency vehicle with flashing emergency signal lights (hazard lights), move over and slow down.’",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "KY-662",
+          "location": "p.66 (printed) — 'When approaching an authorized\nemergency vehicle stopped on the roadside,\nyou should proceed with caution by slowing\nand yielding the right-of-way by making a\nlane change into a lane not next to that of\nthe authorized emergency vehicle if safety\nand traffic conditions permit.'",
+          "asOf": "2026-09-14",
+          "state": "Kentucky"
+        },
+        {
+          "id": "SC-431",
+          "location": "p.124 (physical) — 'Slow down and yield the right-of-way by making a lane change into a lane away from the authorized emergency vehicle, if safety and traffic conditions permit.'",
+          "asOf": "2026-09-14",
+          "state": "South Carolina"
+        },
+        {
+          "id": "VA-112",
+          "location": "p.16 (printed) — 'change to a lane not next to the vehicle. If you are unable to safely change lanes, reduce your speed and proceed with caution.'",
+          "asOf": "2026-09-06",
+          "state": "Virginia"
+        }
+      ],
+      "absent": [
+        "Arkansas",
+        "Connecticut",
+        "District of Columbia",
+        "Florida",
+        "Georgia",
+        "New Jersey",
+        "Utah",
+        "West Virginia"
+      ],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {
@@ -1968,6 +2403,72 @@
     },
     {
       "id": "headlights-sunset",
+      "lang": "en",
+      "question": "How long after sunset must your headlights be on in most states?",
+      "topics": [
+        "headlights-when"
+      ],
+      "corpus": "a90b511aab8fcaf2e25f24a3f790f97265be8607047f9fc08e37e4c356215f69",
+      "answer": "There is no single rule most states share; they split into two groups. Many states, like Arizona, Florida and Virginia, require headlights right from sunset until sunrise. Many others, like Texas, New York and Washington, start 30 minutes after sunset and end 30 minutes before sunrise. Some states, like Maryland and Rhode Island, set no sunset rule and only tie headlights to how far you can see.",
+      "sources": [
+        {
+          "id": "AZ-484",
+          "location": "p.57 (printed) — 'You must use headlights from sunset to sunrise, but be aware that other driver may not have turned on their headlights.'",
+          "asOf": "2026-09-14",
+          "state": "Arizona"
+        },
+        {
+          "id": "FL-458",
+          "location": "p.73 (printed) — 'Use headlights between the hours of sunset and sunrise.'",
+          "asOf": "2026-09-14",
+          "state": "Florida"
+        },
+        {
+          "id": "VA-187",
+          "location": "p.23 (printed) — 'You must use headlights from sunset to sunrise.'",
+          "asOf": "2026-09-06",
+          "state": "Virginia"
+        },
+        {
+          "id": "TX-434",
+          "location": "p.47 (printed) — 'You must use your headlights beginning 30 minutes after sunset and ending 30 minutes before sunrise, or anytime when individuals or vehicles cannot be seen clearly for at least 1,000 feet'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "NY-350",
+          "location": "p.63 (printed) — 'The law requires you to use your headlights from one-half hour after the sun sets to one-half hour before the sun rises, when visibility is less than 1,000 feet (300 m) and when you use your windshield wipers to clear rain, snow or sleet.'",
+          "asOf": "2026-09-14",
+          "state": "New York"
+        },
+        {
+          "id": "WA-039",
+          "location": "p.49 (physical) — 'Washington law says you need to have your headlights on a half hour after sunset to a half hour before sunrise.'",
+          "asOf": "2026-09-14",
+          "state": "Washington"
+        },
+        {
+          "id": "MD-099",
+          "location": "p.27 (printed) — 'you must turn on your headlights anytime there is not enough light to clearly see at least 1,000 feet in front of your vehicle'",
+          "asOf": "2026-09-06",
+          "state": "Maryland"
+        },
+        {
+          "id": "RI-453",
+          "location": "p.52 (printed) — 'The law requires motorists to turn their headlights on when driving from sunset to sunrise, any time you cannot see 500 feet ahead of you, and when windshield wipers are in use as a result of rain, sleet, snow, etc.'",
+          "asOf": "2026-09-14",
+          "state": "Rhode Island"
+        }
+      ],
+      "absent": [
+        "Hawaii",
+        "South Dakota"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "headlights-sunset",
       "lang": "es",
       "question": "¿Cuánto tiempo después de la puesta del sol hay que encender las luces en la mayoría de los estados?",
       "topics": [
@@ -2048,6 +2549,156 @@
         "South Dakota"
       ],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "headlights-wipers",
+      "lang": "en",
+      "question": "Which states make you turn on your headlights whenever your wipers are on?",
+      "topics": [
+        "headlights-when"
+      ],
+      "corpus": "a90b511aab8fcaf2e25f24a3f790f97265be8607047f9fc08e37e4c356215f69",
+      "answer": "California, Connecticut, Illinois, Kansas, New York, Ohio and Pennsylvania make you turn on your headlights when your wipers are on. In most of these, it applies when you use the wipers for weather like rain, snow or fog. Georgia doesn't mention wipers, but you need headlights any time it is raining. Most other states tie headlights to darkness or poor visibility instead.",
+      "sources": [
+        {
+          "id": "CA-081",
+          "location": "p.11 (printed) — 'In adverse weather. If you need to use your windshield wipers due to fog, rain, or snow, you must turn on your low-beam headlights.'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "CT-444",
+          "location": "p.38 (printed) — 'Remember, if you turn on your wipers, turn on your headlights. It's the law.'",
+          "asOf": "2026-09-14",
+          "state": "Connecticut"
+        },
+        {
+          "id": "IL-592",
+          "location": "p.92 (printed) — 'Headlights - Vehicles must have two headlights, which must be on from sunset to sunrise and be used when rain, snow, fog, or other conditions require windshield wipers. They should also be used when objects 1,000 feet away cannot be seen.'",
+          "asOf": "2026-09-14",
+          "state": "Illinois"
+        },
+        {
+          "id": "KS-503",
+          "location": "p.67 (printed) — 'Many states including Kansas require you to turn on your headlights whenever the wipers are used on the vehicle.'",
+          "asOf": "2026-09-14",
+          "state": "Kansas"
+        },
+        {
+          "id": "NY-350",
+          "location": "p.63 (printed) — 'The law requires you to use your headlights from one-half hour after the sun sets to one-half hour before the sun rises, when visibility is less than 1,000 feet (300 m) and when you use your windshield wipers to clear rain, snow or sleet.'",
+          "asOf": "2026-09-14",
+          "state": "New York"
+        },
+        {
+          "id": "OH-159",
+          "location": "p.35 (compiled) — 'At any other time when natural light conditions do not make it possible to clearly see objects 1,000 feet ahead.'",
+          "asOf": "2026-09-14",
+          "state": "Ohio"
+        },
+        {
+          "id": "PA-202",
+          "location": "p.40 (printed) — 'When they cannot see pedestrians or vehicles on the highway for a distance of 1,000 feet ahead of the vehicle they are operating.'",
+          "asOf": "2026-09-06",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "GA-165",
+          "location": "p.59 (compiled) — 'You must use your headlights between one-half hour after sunset to one-half hour before sunrise; at any time when it is raining; or when visibility is limited.'",
+          "asOf": "2026-09-18",
+          "state": "Georgia"
+        },
+        {
+          "id": "AZ-484",
+          "location": "p.57 (printed) — 'You must use headlights from sunset to sunrise, but be aware that other driver may not have turned on their headlights.'",
+          "asOf": "2026-09-14",
+          "state": "Arizona"
+        },
+        {
+          "id": "MD-099",
+          "location": "p.27 (printed) — 'you must turn on your headlights anytime there is not enough light to clearly see at least 1,000 feet in front of your vehicle'",
+          "asOf": "2026-09-06",
+          "state": "Maryland"
+        },
+        {
+          "id": "TX-434",
+          "location": "p.47 (printed) — 'You must use your headlights beginning 30 minutes after sunset and ending 30 minutes before sunrise, or anytime when individuals or vehicles cannot be seen clearly for at least 1,000 feet'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        }
+      ],
+      "absent": [
+        "Hawaii",
+        "South Dakota"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "headlights-wipers",
+      "lang": "es",
+      "question": "¿Qué estados obligan a encender las luces cada vez que se usan los limpiaparabrisas?",
+      "topics": [
+        "headlights-when"
+      ],
+      "corpus": "a90b511aab8fcaf2e25f24a3f790f97265be8607047f9fc08e37e4c356215f69",
+      "answer": "California, Connecticut, Illinois, Kansas, Nueva York, Ohio y Pensilvania te obligan a encender las luces cuando usas los limpiaparabrisas por el clima. California pide en concreto las luces bajas. Georgia también las pide siempre que llueve. La mayoría de los demás estados solo las piden de noche o cuando no ves bien hacia adelante.",
+      "sources": [
+        {
+          "id": "CA-081",
+          "location": "p.11 (printed) — 'In adverse weather. If you need to use your windshield wipers due to fog, rain, or snow, you must turn on your low-beam headlights.'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "CT-444",
+          "location": "p.38 (printed) — 'Remember, if you turn on your wipers, turn on your headlights. It's the law.'",
+          "asOf": "2026-09-14",
+          "state": "Connecticut"
+        },
+        {
+          "id": "IL-592",
+          "location": "p.92 (printed) — 'Headlights - Vehicles must have two headlights, which must be on from sunset to sunrise and be used when rain, snow, fog, or other conditions require windshield wipers. They should also be used when objects 1,000 feet away cannot be seen.'",
+          "asOf": "2026-09-14",
+          "state": "Illinois"
+        },
+        {
+          "id": "KS-503",
+          "location": "p.67 (printed) — 'Many states including Kansas require you to turn on your headlights whenever the wipers are used on the vehicle.'",
+          "asOf": "2026-09-14",
+          "state": "Kansas"
+        },
+        {
+          "id": "NY-350",
+          "location": "p.63 (printed) — 'The law requires you to use your headlights from one-half hour after the sun sets to one-half hour before the sun rises, when visibility is less than 1,000 feet (300 m) and when you use your windshield wipers to clear rain, snow or sleet.'",
+          "asOf": "2026-09-14",
+          "state": "New York"
+        },
+        {
+          "id": "OH-159",
+          "location": "p.35 (compiled) — 'At any other time when natural light conditions do not make it possible to clearly see objects 1,000 feet ahead.'",
+          "asOf": "2026-09-14",
+          "state": "Ohio"
+        },
+        {
+          "id": "PA-202",
+          "location": "p.40 (printed) — 'When they cannot see pedestrians or vehicles on the highway for a distance of 1,000 feet ahead of the vehicle they are operating.'",
+          "asOf": "2026-09-06",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "GA-165",
+          "location": "p.59 (compiled) — 'You must use your headlights between one-half hour after sunset to one-half hour before sunrise; at any time when it is raining; or when visibility is limited.'",
+          "asOf": "2026-09-18",
+          "state": "Georgia"
+        }
+      ],
+      "absent": [
+        "Hawaii",
+        "South Dakota"
+      ],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {
@@ -2634,6 +3285,57 @@
       "model": "claude-opus-5-5"
     },
     {
+      "id": "bac-lowest",
+      "lang": "es",
+      "question": "¿Qué estado tiene el límite de alcohol en la sangre más bajo para conductores adultos?",
+      "topics": [
+        "bac-adult"
+      ],
+      "corpus": "a086e2da301574606716ecfa3d61b8fccd05e6bacb0cecfce807deccd0aa477f",
+      "answer": "Utah tiene el límite más bajo: 0.05 para conductores adultos. En la mayoría de los otros estados, el límite es 0.08.",
+      "sources": [
+        {
+          "id": "UT-440",
+          "location": "p.52 (printed) — 'If you are over 0.05 BAC (0.04 for CDL), you violate the law.'",
+          "asOf": "2026-09-14",
+          "state": "Utah"
+        },
+        {
+          "id": "CA-589",
+          "location": "p.73 (printed) — 'It is illegal for you to drive if you have a BAC of:'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "TX-547",
+          "location": "p.55 (printed) — 'In Texas, a person, age 21 and over, is considered legally intoxicated if the person has a BAC of 0.08 or more'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "NJ-243",
+          "location": "p.115 (printed) — 'In New Jersey, it is illegal for an individual to drive while under the influence of intoxicating liquor, narcotic, hallucinogenic or habit-producing drugs, or with a BAC of 0.08 percent or higher.'",
+          "asOf": "2026-09-14",
+          "state": "New Jersey"
+        },
+        {
+          "id": "IL-318",
+          "location": "p.48 (printed) — 'It is illegal to drive if your BAC is .08% or more.'",
+          "asOf": "2026-09-14",
+          "state": "Illinois"
+        }
+      ],
+      "absent": [
+        "Minnesota",
+        "Oklahoma",
+        "South Carolina",
+        "Wisconsin",
+        "Wyoming"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
       "id": "bac-under-21",
       "lang": "en",
       "question": "What blood alcohol level is too much for a driver under 21 in most states?",
@@ -2960,6 +3662,107 @@
       ],
       "absent": [],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "bac-both",
+      "lang": "en",
+      "question": "How far apart are the adult and under-21 blood alcohol limits across the states?",
+      "topics": [
+        "bac-adult",
+        "bac-under-21"
+      ],
+      "corpus": "45e5aecaf0e0201e466efe3fe60705a5a12ab7f205258be5c14d279923e922a0",
+      "answer": "For adults, most states set the limit at 0.08, but Utah is stricter at 0.05. If you're under 21, most states draw the line at 0.02, a quarter of the adult figure. California and New Jersey go lower, to 0.01. Some states, like Texas, Maryland and Wisconsin, allow no alcohol at all if you're under 21. Utah is strictest overall: 0.05 for adults, and not a drop if you're under 21.",
+      "sources": [
+        {
+          "id": "AL-165",
+          "location": "p.33 (printed) — 'Under Alabama law, it is unlawful to drive with a concentration of .08 percent or more alcohol in the blood, or while under the influence of alcohol.'",
+          "asOf": "2026-09-14",
+          "state": "Alabama"
+        },
+        {
+          "id": "CA-589",
+          "location": "p.73 (printed) — 'It is illegal for you to drive if you have a BAC of:'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "MD-135",
+          "location": "p.33 (printed) — 'Maryland considers drivers to be driving under the influence of alcohol when their blood alcohol concentration is .08 or higher.'",
+          "asOf": "2026-09-06",
+          "state": "Maryland"
+        },
+        {
+          "id": "TX-547",
+          "location": "p.55 (printed) — 'In Texas, a person, age 21 and over, is considered legally intoxicated if the person has a BAC of 0.08 or more'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "UT-440",
+          "location": "p.52 (printed) — 'If you are over 0.05 BAC (0.04 for CDL), you violate the law.'",
+          "asOf": "2026-09-14",
+          "state": "Utah"
+        },
+        {
+          "id": "AL-166",
+          "location": "p.33 (printed) — 'Persons under 21 years of age whose blood alcohol content is .02% or more.'",
+          "asOf": "2026-09-14",
+          "state": "Alabama"
+        },
+        {
+          "id": "GA-157",
+          "location": "p.56 (compiled) — 'A person under 21 years of age is irrefutably considered \"Under the Influence of Alcohol\" when 0.02 gm or more by alcohol weight is present in the blood'",
+          "asOf": "2026-09-18",
+          "state": "Georgia"
+        },
+        {
+          "id": "MO-623",
+          "location": "p.71 (printed) — '0.04% for commercial vehicle drivers and 0.02% if under 21'",
+          "asOf": "2026-09-14",
+          "state": "Missouri"
+        },
+        {
+          "id": "CA-590",
+          "location": "p.73 (printed) — '0.01% or higher if you are under 21 years old.'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "NJ-244",
+          "location": "p.115 (printed) — 'For individuals younger than 21, it is illegal to drive with a BAC of 0.01 percent or higher.'",
+          "asOf": "2026-09-14",
+          "state": "New Jersey"
+        },
+        {
+          "id": "TX-549",
+          "location": "p.55 (printed) — 'Texas law does not allow any amount of blood alcohol concentration (BAC) for minors'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "MD-S12",
+          "location": "Md. Code, Transp. § 16-113(b) — 'the Administration shall impose on each licensee under the age of 21 years an alcohol restriction that prohibits the licensee from driving or attempting to drive a motor vehicle while having alcohol in the licensee’s blood.'",
+          "kind": "statute",
+          "asOf": "2026-10-05",
+          "state": "Maryland"
+        },
+        {
+          "id": "WI-230",
+          "location": "p.49 (printed) — 'The legal alcohol concentration allowed for drivers under the age of 21 is 0.00%.'",
+          "asOf": "2026-09-14",
+          "state": "Wisconsin"
+        },
+        {
+          "id": "UT-433",
+          "location": "p.52 (printed) — 'Not-a-Drop Act provides that a person under 21 years of age driving with any measurable amount of alcohol in their body will have all driving privileges denied for six months for a first offense.'",
+          "asOf": "2026-09-14",
+          "state": "Utah"
+        }
+      ],
+      "absent": [],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {
@@ -3495,6 +4298,73 @@
         "Oregon"
       ],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "texting-legal",
+      "lang": "es",
+      "question": "¿Hay algún estado donde todavía sea legal enviar mensajes de texto mientras se conduce?",
+      "topics": [
+        "texting"
+      ],
+      "corpus": "c45b7791a9c23178f1d24cca3dcf2f93aed3b4e4da43d744fae6454ec137e080",
+      "answer": "Sí, puede pasar en Montana: su manual solo dice que la mayoría de sus ciudades tienen sus propias leyes contra los mensajes al manejar. En la mayoría de los estados, escribir, leer o mandar mensajes mientras manejas está prohibido en todo el estado.",
+      "sources": [
+        {
+          "id": "MT-422",
+          "location": "p.49 (printed) — 'Most Montana cities have passed laws against texting and talking on cell phones while driving.'",
+          "asOf": "2026-09-14",
+          "state": "Montana"
+        },
+        {
+          "id": "AL-157",
+          "location": "p.32 (printed) — 'Alabama’s new law prohibits using a wireless device to write, send or read a text message, instant message or e-mail while operating a motor vehicle.'",
+          "asOf": "2026-09-14",
+          "state": "Alabama"
+        },
+        {
+          "id": "CA-572",
+          "location": "p.70 (printed) — 'Do not send or read text messages or emails while driving.'",
+          "asOf": "2026-09-14",
+          "state": "California"
+        },
+        {
+          "id": "FL-145",
+          "location": "p.34 (printed) — 'It is illegal in Florida to operate a motor vehicle while texting.'",
+          "asOf": "2026-09-14",
+          "state": "Florida"
+        },
+        {
+          "id": "NY-248",
+          "location": "p.52 (printed) — 'In New York State, it is illegal to use portable electronic devices, such as cell phones and smart phones, to send or receive text messages or e-mails while driving.'",
+          "asOf": "2026-09-14",
+          "state": "New York"
+        },
+        {
+          "id": "TX-530",
+          "location": "p.54 (printed) — 'It is against the law to read, write, or send messages on a cell phone or other portable wireless device'",
+          "asOf": "2026-09-14",
+          "state": "Texas"
+        },
+        {
+          "id": "GA-204",
+          "location": "p.62 (compiled) — 'Writing, sending or reading any text-based communication, including a text message, instant message, e-mail or internet data.'",
+          "asOf": "2026-09-18",
+          "state": "Georgia"
+        },
+        {
+          "id": "OK-566",
+          "location": "p.61 (printed) — 'As of 2015, it is illegal to text while driving in Oklahoma.'",
+          "asOf": "2026-09-14",
+          "state": "Oklahoma"
+        }
+      ],
+      "absent": [
+        "Hawaii",
+        "New Hampshire",
+        "Oregon"
+      ],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {
@@ -4654,6 +5524,143 @@
         "Rhode Island"
       ],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "u-turn-sight",
+      "lang": "en",
+      "question": "How far away must oncoming drivers be able to see you before you make a U-turn?",
+      "topics": [
+        "u-turn"
+      ],
+      "corpus": "6bb175a06f12b377420b3c2170aaa1471715513a6739ed7f73b5d3d8e70163a2",
+      "answer": "In most states that set a distance, other drivers must be able to see you from 500 feet away before you U-turn. Minnesota is the strictest: drivers must be able to see you from 1,000 feet. Other states just ban U-turns on curves or near hilltops without giving a distance.",
+      "sources": [
+        {
+          "id": "MN-258",
+          "location": "p.33 (printed) — 'They are also illegal near the tops of hills and on curves where other drivers cannot see you from 1,000 feet away.'",
+          "asOf": "2026-09-14",
+          "state": "Minnesota"
+        },
+        {
+          "id": "CT-C-14-242-d",
+          "location": "Conn. Gen. Stat. § 14-242(d) — '(d) No person shall turn a vehicle so as to proceed in the opposite direction upon any curve, or upon the approach to, or near the crest of, a grade, where such vehicle cannot be seen by the driver of any other vehicle approaching from either direction within five hundred feet, or at any location where signs prohibiting U-turns are posted by any traffic authority.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Connecticut"
+        },
+        {
+          "id": "ID-363",
+          "location": "p.73 (printed) — 'where the vehicle\n    cannot be seen by approaching vehicles from either\n    direction within 500 feet'",
+          "asOf": "2026-09-14",
+          "state": "Idaho"
+        },
+        {
+          "id": "IL-200",
+          "location": "p.32 (printed) — 'You must not turn around on curves and hills unless you can see for at least 500 feet in all directions.'",
+          "asOf": "2026-09-14",
+          "state": "Illinois"
+        },
+        {
+          "id": "KS-078",
+          "location": "p.17 (printed) — 'Do not make a “U” turn on a curve, near the top of a hill or anywhere you cannot be seen by other drivers for at least 500 feet.'",
+          "asOf": "2026-09-14",
+          "state": "Kansas"
+        },
+        {
+          "id": "LA-612",
+          "location": "p.90 (printed) — 'Do not attempt to turn around while on a hill or in a curve where your vehicle cannot be seen by other drivers approaching from either direction within 500 feet.'",
+          "asOf": "2026-09-14",
+          "state": "Louisiana"
+        },
+        {
+          "id": "MA-535",
+          "location": "p.98 (printed) — 'Do not make a U-turn at the crest of a hill, near a curve, or anyplace where you or other drivers cannot see 500 feet away.'",
+          "asOf": "2026-09-14",
+          "state": "Massachusetts"
+        },
+        {
+          "id": "ME-C-29-A-2072-p1",
+          "location": "29-A M.R.S. § 2072 — 'An operator may not turn a vehicle to proceed in the opposite direction on a curve or on the approach to or near the crest of a grade, where the vehicle can not be seen by the operator of another vehicle approaching in either direction within 500 feet.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Maine"
+        },
+        {
+          "id": "MT-C-61-8-334-2",
+          "location": "Mont. Code Ann. § 61-8-334(2) — '(2) upon any curve or upon the approach to or near the crest of a grade where the vehicle cannot be seen by the operator of any other vehicle approaching from either direction within 500 feet.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Montana"
+        },
+        {
+          "id": "ND-182",
+          "location": "p.20 (printed) — 'You may not make a U-turn near the crest of a hill or any curve where the driver cannot see 500 feet or more.'",
+          "asOf": "2026-09-14",
+          "state": "North Dakota"
+        },
+        {
+          "id": "NJ-C-39-4-125-p1",
+          "location": "N.J. Stat. Ann. § 39:4-125 — 'Turning on curve, grade or place where view obstructed or State highway marked with \"no U turn\" sign. The driver of a vehicle shall not turn such vehicle around so as to proceed in the opposite direction upon any curve or upon the approach to or near the crest of a grade or at any place upon a highway as defined in R.S. 39:1-1 where the view of such vehicle is obstructed within a distance of five hundred feet along the highway in either direction; and no such vehicle shall be turned around so as to proceed in the opposite direction on a highway which shall be conspicuously marked with signs stating \"no U turn\".'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "New Jersey"
+        },
+        {
+          "id": "RI-C-31-16-4-p1",
+          "location": "R.I. Gen. Laws § 31-16-4 — 'No vehicle shall be turned so as to proceed in the opposite direction upon any curve or upon the approach to, or near the crest of a grade, where the vehicle cannot be seen by the driver of any other vehicle approaching from either direction within five hundred feet (500′). Violations of this section are subject to fines enumerated in § 31-41.1-4.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Rhode Island"
+        },
+        {
+          "id": "SD-380",
+          "location": "p.39 (printed) — 'Upon a curve or upon the approach to or near the crest of a grade on any undivided highway where the vehicle cannot be seen by the driver of any other vehicle with 500 feet approaching from any direction.'",
+          "asOf": "2026-09-14",
+          "state": "South Dakota"
+        },
+        {
+          "id": "GA-131",
+          "location": "p.53 (compiled) — 'Do not make a U-turn on a curve or near the top of a hill if you cannot be seen by other drivers approaching from either direction. Do not make a U-turn where signs prohibit doing so.'",
+          "asOf": "2026-09-18",
+          "state": "Georgia"
+        },
+        {
+          "id": "IN-149",
+          "location": "p.39 (printed) — 'Never make a U-turn on a curve in the road or when approaching the crest of a hill or grade'",
+          "asOf": "2026-09-14",
+          "state": "Indiana"
+        },
+        {
+          "id": "PA-118",
+          "location": "p.46 (printed) — 'U-turns are not allowed on curves or when you are approaching or nearing the crest of a hill.'",
+          "asOf": "2026-09-06",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "WA-216",
+          "location": "p.124 (physical) — 'You must have clear visibility in all directions before making a U-turn. For that reason, do not make a U-turn on a curve or when approaching the crest of a hill.'",
+          "asOf": "2026-09-14",
+          "state": "Washington"
+        }
+      ],
+      "absent": [
+        "Alaska",
+        "Alabama",
+        "Arkansas",
+        "Florida",
+        "Hawaii",
+        "Kentucky",
+        "Michigan",
+        "Mississippi",
+        "New Hampshire",
+        "New Mexico",
+        "Ohio",
+        "South Carolina",
+        "Vermont",
+        "Wyoming"
+      ],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {
@@ -6117,6 +7124,118 @@
     },
     {
       "id": "open-container-passenger",
+      "lang": "en",
+      "question": "Is there a state where a passenger may hold an open beer in a moving car?",
+      "topics": [
+        "open-container"
+      ],
+      "corpus": "a9afd7c4f5371ff99746a7564c0658ea0ea2976e71f05c71cfef78a7385d1091",
+      "answer": "Not in an ordinary car in most states: open alcohol is banned for passengers too, not just the driver. In Florida, Kentucky and Nevada, passengers may have one in buses, taxis, limos or motor homes. Vermont's law given only bars the person driving from having an open container. In Rhode Island and New Hampshire, the driver is breaking the law if an open container is in the passenger area.",
+      "sources": [
+        {
+          "id": "AZ-503",
+          "location": "p.59 (printed) — 'It is illegal for a driver or passenger to consume or possess an open container of spirituous liquor in the passenger compartment of a motor vehicle while on any public roadway.'",
+          "asOf": "2026-09-14",
+          "state": "Arizona"
+        },
+        {
+          "id": "ID-759",
+          "location": "p.130 (printed) — 'Idaho's open container law prohibits both drivers and\npassengers from drinking or possessing an open beverage\ncontainer of alcohol'",
+          "asOf": "2026-09-14",
+          "state": "Idaho"
+        },
+        {
+          "id": "NY-294",
+          "location": "p.57 (printed) — 'It is also a traffic infraction for a driver or passenger in a motor vehicle on a public highway, street or road to consume marijuana/cannabis.'",
+          "asOf": "2026-09-14",
+          "state": "New York"
+        },
+        {
+          "id": "PA-C-3809-a",
+          "location": "75 Pa.C.S. § 3809(a) — '(a) General rule.--Except as set forth in subsection (b), an individual who is an operator or an occupant in a motor vehicle may not be in possession of an open alcoholic beverage container or consume a controlled substance as defined in the act of April 14, 1972 (P.L.233, No.64), known as The Controlled Substance, Drug, Device and Cosmetic Act, or an alcoholic beverage in a motor vehicle while the motor vehicle is located on a highway in this Commonwealth.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Pennsylvania"
+        },
+        {
+          "id": "WV-C-17C-5D-3-b",
+          "location": "W. Va. Code § 17C-5D-3(b) — '(b) It is unlawful for the operator or a passenger of a motor vehicle to knowingly possess any open alcoholic beverage container in the passenger area of any motor vehicle that is located on a public highway or right-of-way of a public highway in this state, whether the vehicle is in motion or at rest. Possession by a person of one or more open containers in a single criminal occurrence is a single offense.'",
+          "kind": "statute",
+          "asOf": "2026-10-09",
+          "state": "West Virginia"
+        },
+        {
+          "id": "OH-C-4301.62-B",
+          "location": "Ohio Rev. Code § 4301.62(B) — '(B) No person shall have in the person's possession an opened container of beer or intoxicating liquor in any of the following circumstances: (1) Except as provided in division (C)(1)(e) of this section, in an agency store; (2) Except as provided in division (C) or (J) of this section, on the premises of the holder of any permit issued by the division of liquor control; (3) In any other public place; (4) Except as provided in division (D) or (E) of this section, while operating or being a passenger in or on a motor vehicle on any street, highway, or other public or private property open to the public for purposes of vehicular travel or parking; (5) Except as provided in division (D) or (E) of this section, while being in or on a stationary motor vehicle on any street, highway, or other public or private property open to the public for purposes of vehicular travel or parking.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Ohio"
+        },
+        {
+          "id": "MA-365",
+          "location": "p.74 (printed) — 'You may not have an open alcoholic drink inside your vehicle, even if someone else is holding it.'",
+          "asOf": "2026-09-14",
+          "state": "Massachusetts"
+        },
+        {
+          "id": "FL-C-316.1936-2",
+          "location": "Fla. Stat. § 316.1936(2) — '(2)(a) It is unlawful and punishable as provided in this section for any person to possess an open container of an alcoholic beverage or consume an alcoholic beverage while operating a vehicle in the state or while a passenger in or on a vehicle being operated in the state. (b) It is unlawful and punishable as provided in this section for any person to possess an open container of an alcoholic beverage or consume an alcoholic beverage while seated in or on a motor vehicle that is parked or stopped within a road as defined in this section. Notwithstanding the prohibition contained in this section, passengers in vehicles designed, maintained, and used primarily for the transportation of persons for compensation and in motor homes are exempt.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Florida"
+        },
+        {
+          "id": "KY-C-189.530-2",
+          "location": "KRS 189.530(2) — '(2) A person is guilty of possession of an open alcoholic beverage container in a motor vehicle, when he or she has in his or her possession an open alcoholic beverage container in the passenger area of a motor vehicle located on a public highway or on the right-of-way of a public highway. However, nothing in this section shall prohibit the possession of an open alcoholic beverage container by an individual who is strictly a passenger and not the driver, in the passenger area of a motor vehicle maintained or used primarily for the transportation of persons for compensation, such as buses, taxis, and limousines, or in a recreational vehicle, motor home, or motor coach.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Kentucky"
+        },
+        {
+          "id": "NV-460",
+          "location": "p.81 (printed) — 'Nevada’s open container law makes it illegal to have alcoholic beverages which have been opened in the driver or passenger areas when a vehicle is being driven.'",
+          "asOf": "2026-09-14",
+          "state": "Nevada"
+        },
+        {
+          "id": "VT-C-1134-b",
+          "location": "23 V.S.A. § 1134(b) — '(b) A person operating a motor vehicle on a public highway shall not possess any open container that contains an alcoholic beverage or cannabis in the passenger area of the motor vehicle.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Vermont"
+        },
+        {
+          "id": "RI-C-31-22-21.1-a",
+          "location": "R.I. Gen. Laws § 31-22-21.1(a) — '(a) No person shall operate a motor vehicle upon the public highways with any unsealed alcoholic beverage container within the passenger section of the vehicle.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "Rhode Island"
+        },
+        {
+          "id": "NH-C-265-A-44-II",
+          "location": "N.H. Rev. Stat. Ann. § 265-A:44(II) — 'II. Except as provided in paragraph V, no driver shall transport, carry, possess, or have any liquor or beverage within the passenger area of any motor vehicle or OHRV upon any way in this state except in the original container and with the seal unbroken. Securely capped partially filled containers of liquor or beverages shall be stored and transported in the trunk of the motor vehicle or OHRV. If the motor vehicle or OHRV does not have a trunk, such containers shall be stored and transported in that compartment or area of the vehicle or OHRV which is the least accessible to the driver.'",
+          "kind": "statute",
+          "asOf": "2026-10-08",
+          "state": "New Hampshire"
+        }
+      ],
+      "absent": [
+        "Arkansas",
+        "Connecticut",
+        "District of Columbia",
+        "Delaware",
+        "Georgia",
+        "Missouri",
+        "Mississippi",
+        "Oklahoma",
+        "South Dakota",
+        "Tennessee"
+      ],
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "open-container-passenger",
       "lang": "es",
       "question": "¿Hay algún estado donde un pasajero pueda tener una cerveza abierta en un auto en marcha?",
       "topics": [
@@ -6853,6 +7972,80 @@
         "Ohio"
       ],
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "supervisor-oldest",
+      "lang": "en",
+      "question": "Which state requires the oldest supervising driver for a learner?",
+      "topics": [
+        "permit-supervisor"
+      ],
+      "corpus": "58ed43dc40192f61df3e52957ff588aedb96255798493e1670925941288c5d20",
+      "answer": "The oldest age any state sets is 25. Delaware asks for 25 if it's not your parent or guardian, plus 5 years licensed. New Hampshire and Vermont also allow a non-parent only at 25 or older. Indiana and Iowa set 25 for some learners, like those 18 or older. Most states set 21 instead.",
+      "sources": [
+        {
+          "id": "DE-C-2710-c-2",
+          "location": "21 Del. C. § 2710(c)(2) — '(2) When the permit holder is under mandatory supervision, the permit holder must be supervised by a properly licensed parent, guardian or a licensed driver at least 25 years of age who has held a Class D license for at least 5 years. The supervising driver must be seated beside the permit holder in the front seat of the vehicle when it is in motion. No person other than the supervising driver can be in the front seat.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Delaware"
+        },
+        {
+          "id": "NH-019",
+          "location": "p.2 (printed) — 'accompanied by a parent; legal guardian; or a responsible adult who is 25 years of age or older, and who is a licensed driver.'",
+          "asOf": "2026-09-14",
+          "state": "New Hampshire"
+        },
+        {
+          "id": "VT-028",
+          "location": "p.20 (printed) — 'A licensed and unimpaired person at least twenty-five (25) years of age.'",
+          "asOf": "2026-09-14",
+          "state": "Vermont"
+        },
+        {
+          "id": "IN-003",
+          "location": "p.4 (printed) — 'You may practice driving with a learner’s permit only when accompanied by a licensed driver with valid (not expired, suspended, or revoked) driving privileges who is at least 25 years of age, or with your spouse provided he or she is licensed and at least 21 years of age or older.'",
+          "asOf": "2026-09-14",
+          "state": "Indiana"
+        },
+        {
+          "id": "IA-C-321.180-1-p3",
+          "location": "Iowa Code § 321.180(1)(2) — 'b. (1) Except as otherwise provided, a permittee who is eighteen years of age or older must be accompanied by a person issued a driver’s license valid for the vehicle operated who is a member of the permittee’s immediate family if the family member is at least twenty-one years of age, an approved driver education instructor, a prospective driver education instructor who is enrolled in a practitioner preparation program with a safety education program approved by the state board of education, or a person at least twenty-five years of age, and who is actually occupying a seat beside the driver.'",
+          "kind": "statute",
+          "asOf": "2026-10-07",
+          "state": "Iowa"
+        },
+        {
+          "id": "FL-014",
+          "location": "p.1 (printed) — 'Always drive accompanied by a licensed driver, age 21+, who rides in the closest seat to the right of the driver.'",
+          "asOf": "2026-09-14",
+          "state": "Florida"
+        },
+        {
+          "id": "CO-011",
+          "location": "p.1 (printed) — 'When you are driving with an instruction permit, you must have a person who is 21 years or older who has a valid Colorado license in the front passenger seat'",
+          "asOf": "2026-09-14",
+          "state": "Colorado"
+        },
+        {
+          "id": "KY-037",
+          "location": "p.5 (printed) — ‘Permit holders may only drive when accompanied (in the front passenger seat) by a licensed driver 21 years of age or older and shall have the instruction permit in possession at all times when operating a motor vehicle.’",
+          "asOf": "2026-09-14",
+          "state": "Kentucky"
+        }
+      ],
+      "absent": [
+        "California",
+        "Connecticut",
+        "Illinois",
+        "New York",
+        "Ohio",
+        "Oregon",
+        "Tennessee",
+        "Washington"
+      ],
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {

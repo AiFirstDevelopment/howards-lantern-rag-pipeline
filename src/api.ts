@@ -277,8 +277,31 @@ export async function askLearners(input: {
   spend?: string
   /** The question code this browser holds, on every question: the row is kept under it. */
   code?: string
+  /** This browser's analytics id, so the Learners tab can say who asked. */
+  session?: string
 }): Promise<AskAnswer | null> {
   return await post<AskAnswer>('/api/ask', input)
+}
+
+/**
+ * A thumbs up or down on one of the box's answers (worker/src/learner-api.ts,
+ * `handleLearnersRate`): the conversation is what proves this browser asked
+ * it. True when the worker kept it; false on anything else, which the box
+ * does not retry -- a rating lost is a count short by one, not a learner
+ * without an answer.
+ */
+export async function rateAnswer(input: { conversation: string; questionId: number; rating: 1 | -1 }): Promise<boolean> {
+  if (!apiConfigured()) return false
+  try {
+    const response = await fetch(apiUrl('/api/ask/rate'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return response.status === 204
+  } catch {
+    return false
+  }
 }
 
 /**

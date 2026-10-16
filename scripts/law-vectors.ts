@@ -7,6 +7,7 @@
  *   npm run laws:embed -- --push       embed and upsert those states, then rewrite the manifest
  *   npm run laws:embed -- --push MD    the same, for one state
  *   npm run laws:embed -- --push --kind process     embed only the rows of the states' own pages, in every state that has them
+ *   npm run laws:embed -- --push MD --no-eval        the push without the retrieval eval it ends with
  *
  * `--kind process` is for the one case where the rest of a state is already
  * embedded and only its page rows are new (docs/plans/what-happens-if.md,
@@ -30,6 +31,11 @@
  *
  * Pushing is the one thing here that changes something outside the
  * repository, so it is off unless asked for, as in scripts/kb-push.ts.
+ *
+ * Each state embedded ends with the retrieval eval for it, as `laws:store`
+ * does (scripts/push-eval.ts, docs/plans/eval-lifecycle-build.md, decision
+ * 35): `evalRecall` and `evalMrr` beside the hash, `null` with the reason
+ * when there is nothing to score, and left as they were with `--no-eval`.
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -41,6 +47,7 @@ import type { AskLaw } from '../worker/src/law-retrieval'
 // What Pages publishes, the state's own pages included: the index ranks every
 // row the box can be given.
 import { publishedLawsOf as lawsOf } from './statutes/laws'
+import { evalLine, harnessEval, skipsEval, withFigures, type EvalFigures } from './push-eval'
 
 export { lawsOf }
 
@@ -50,7 +57,7 @@ const ACCOUNT = 'bc0d77b66c22a79eff22a725d8c7bb49'
 export interface VectorManifest {
   index: string
   model: string
-  states: Record<string, { laws: number; sha256: string }>
+  states: Record<string, { laws: number; sha256: string } & Partial<EvalFigures>>
 }
 
 export function statesOf(root: string): string[] {
@@ -130,8 +137,67 @@ export function batches(laws: AskLaw[]): AskLaw[][] {
   return out
 }
 
-async function push(root: string, code: string, auth: string, kind?: string): Promise<number> {
+async function apiGet(auth: string, route: string): Promise<unknown> {
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/${route}`, { headers: { Authorization: `Bearer ${auth}` } })
+    const parsed = (await response.json()) as { success: boolean; errors: unknown; result: unknown }
+    if (parsed.success) return parsed.result
+    if (attempt >= 4) throw new Error(`${route}: ${response.status} ${JSON.stringify(parsed.errors)}`)
+    await new Promise((resolve) => setTimeout(resolve, 2000 * attempt))
+  }
+}
+
+/** A push's last upsert: the mutation Vectorize answered it with, or null when its answer named none. */
+export interface LastMutation {
+  id: string | null
+}
+
+/** What `vectorize/v2/indexes/<name>/info` says about how far the index has applied its mutations. */
+export interface IndexProgress {
+  processedUpToMutation?: string | null
+}
+
+/** How long a push waits for the index to apply its last upsert before its eval is recorded as null. */
+export const INDEX_WAIT_MS = 10 * 60_000
+
+/**
+ * Wait until the index has applied the push's last upsert, so the eval after
+ * it ranks against the vectors just written. Vectorize accepts an upsert and
+ * applies it later: an eval run on acceptance would score the previous
+ * vectors and record that figure beside the new hash. Applied means the info
+ * names this mutation as the last processed. `processedUpToDatetime` is not
+ * used: it is the server's clock against this machine's, and a skew of
+ * seconds would call an unapplied push applied -- a wrong figure, where a
+ * wait that runs out is only a null one. Null when applied; otherwise why
+ * not, after `timeoutMs`.
+ */
+export async function awaitIndexed(
+  last: LastMutation | null,
+  progress: () => Promise<IndexProgress>,
+  options: { timeoutMs?: number; intervalMs?: number; sleep?: (ms: number) => Promise<void>; now?: () => number } = {},
+): Promise<string | null> {
+  if (last === null) return null
+  const timeoutMs = options.timeoutMs ?? INDEX_WAIT_MS
+  const intervalMs = options.intervalMs ?? 10_000
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+  const now = options.now ?? Date.now
+  // An upsert answered without a mutation id cannot be waited for; going on
+  // anyway would be the eval-on-acceptance this exists to prevent.
+  if (last.id === null) return 'Vectorize answered the push’s last upsert with no mutationId, so whether the index applied it cannot be known'
+  const started = now()
+  for (;;) {
+    const info = await progress()
+    if (info.processedUpToMutation === last.id) return null
+    if (now() - started >= timeoutMs) {
+      return `the index had not applied the push's last upsert (${last.id}) after ${Math.round(timeoutMs / 60_000)} minutes, so an eval would measure the previous vectors`
+    }
+    await sleep(intervalMs)
+  }
+}
+
+async function push(root: string, code: string, auth: string, kind?: string): Promise<{ count: number; last: LastMutation | null }> {
   const laws = lawsOf(root, code).filter((law) => kind === undefined || law.kind === kind)
+  let last: LastMutation | null = null
   for (const batch of batches(laws)) {
     const embedded = (await api(
       auth,
@@ -142,9 +208,10 @@ async function push(root: string, code: string, auth: string, kind?: string): Pr
     const ndjson = batch
       .map((law, index) => JSON.stringify({ id: law.id, namespace: code, values: embedded.data[index] }))
       .join('\n')
-    await api(auth, `vectorize/v2/indexes/${LAWS_INDEX}/upsert`, ndjson, 'application/x-ndjson')
+    const upserted = (await api(auth, `vectorize/v2/indexes/${LAWS_INDEX}/upsert`, ndjson, 'application/x-ndjson')) as { mutationId?: string } | null
+    last = { id: typeof upserted?.mutationId === 'string' ? upserted.mutationId : null }
   }
-  return laws.length
+  return { count: laws.length, last }
 }
 
 async function main(): Promise<number> {
@@ -172,13 +239,26 @@ async function main(): Promise<number> {
     return 1
   }
   const auth = token()
+  const skipping = skipsEval(args)
+  const evaluate = harnessEval(root)
+  const write = () => writeFileSync(path.join(root, MANIFEST_FILE), JSON.stringify(manifest, null, 2) + '\n')
   for (const code of stale) {
-    const count = await push(root, code, auth, kind)
+    const { count, last } = await push(root, code, auth, kind)
     const laws = lawsOf(root, code)
-    manifest.states[code] = { laws: laws.length, sha256: fingerprint(laws) }
+    const previous = manifest.states[code]
+    const entry = { laws: laws.length, sha256: fingerprint(laws) }
+    // Null until this push's eval says otherwise, as in laws-store.ts: a run
+    // that dies in the eval must not leave old figures beside a new hash.
+    manifest.states[code] = withFigures(entry, previous, skipping ? 'skipped' : { evalRecall: null, evalMrr: null })
     // Written after every state, so a run that dies half way records what it did.
-    writeFileSync(path.join(root, MANIFEST_FILE), JSON.stringify(manifest, null, 2) + '\n')
+    write()
     console.log(`${code}: ${count} ${kind === undefined ? 'laws' : `${kind} rows`}`)
+    if (skipping) continue
+    const unapplied = await awaitIndexed(last, async () => (await apiGet(auth, `vectorize/v2/indexes/${LAWS_INDEX}/info`)) as IndexProgress)
+    const result = unapplied === null ? evaluate(code) : { evalRecall: null, evalMrr: null, why: unapplied }
+    manifest.states[code] = withFigures(entry, previous, result)
+    write()
+    console.log(evalLine(code, result))
   }
   return 0
 }

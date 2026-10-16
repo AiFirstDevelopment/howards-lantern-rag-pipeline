@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chooseTopics, NATIONWIDE_FAMILY_TOPICS, type NationwideTopic } from '../../worker/src/law-topics'
+import { chooseTopics, haikuTopicsFor, NATIONWIDE_FAMILY_TOPICS, type NationwideTopic, type TopicsClient } from '../../worker/src/law-topics'
 
 // A chooser that names a family but no topic has still said what the question
 // is about. Before the fallback, "which state has the harshest first-offense
@@ -30,5 +30,38 @@ describe('a chooser that names a family and no topic', () => {
     const chosen = await chooseTopics('how old must a child be to ride in the front seat', TOPICS, async () => ({ topics: [] }))
     expect(chosen.topics).toEqual([])
     expect(chosen.family).toBeNull()
+  })
+})
+
+/** A client that answers every call with `reply` and keeps the system prompt it was sent. */
+function answering(reply: string, systems: string[] = []): TopicsClient {
+  return {
+    messages: { create: async (body: { system: string }) => (systems.push(body.system), { content: [{ type: 'text', text: reply }] }) },
+  } as unknown as TopicsClient
+}
+
+/**
+ * The topic chooser read a topic's question as the whole of what it answers,
+ * so a chip asking for a figure inside the subject was refused with "no
+ * topic" before the model was asked, and never stored: "how much must you
+ * slow down passing a stopped emergency vehicle" (move-over) in both
+ * languages, "how long after sunset must your headlights be on" and the
+ * wipers chip (headlights-when), the U-turn sight distance (u-turn), and the
+ * Spanish curb chip, whose "acera" Haiku did not read as the curb.
+ */
+describe('Haiku as the topic chooser', () => {
+  it('is told that a figure inside a topic’s subject is that topic, with the refused chips as its examples', async () => {
+    const systems: string[] = []
+    await haikuTopicsFor(undefined, answering('{"topics":["move-over"],"family":""}', systems))!('How much must you slow down when passing a stopped emergency vehicle, state by state?', TOPICS)
+    expect(systems[0]).toContain('A question about one figure or condition inside a topic\'s subject is that topic too, though the topic\'s question names the subject and not the figure')
+    expect(systems[0]).toContain('"how much must you slow down passing a stopped emergency vehicle" is move-over')
+    expect(systems[0]).toContain('"how long after sunset must your headlights be on" and "which states make you turn on your headlights when your wipers are on" are headlights-when')
+    expect(systems[0]).toContain('"how far away must oncoming drivers see you before a U-turn" is u-turn')
+  })
+
+  it('is told the Spanish words for a topic’s subject, so a Spanish chip reaches the topic its English twin does', async () => {
+    const systems: string[] = []
+    await haikuTopicsFor(undefined, answering('{"topics":["park-curb"],"family":""}', systems))!('¿Qué estado permite estacionar más lejos de la acera?', TOPICS)
+    expect(systems[0]).toContain('"acera" or "bordillo" is the curb, "limpiaparabrisas" the wipers, "vehículo de emergencia detenido" the stopped emergency vehicle')
   })
 })

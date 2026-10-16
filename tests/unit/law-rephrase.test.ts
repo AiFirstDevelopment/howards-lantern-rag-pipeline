@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { REPHRASE_MODEL, REPHRASE_RULES, REPHRASE_SEARCHES, haikuRephraseFor, type RephraseClient } from '../../worker/src/law-rephrase'
+import { HAIKU_MODEL, REPHRASE_RULES, REPHRASE_SEARCHES, haikuRephraseFor, type RephraseClient } from '../../worker/src/law-rephrase'
 import { PROCESS_FAMILIES } from '../../worker/src/process-families'
 
 /** A client that answers every call with `reply` and keeps what it was sent. */
@@ -22,7 +22,7 @@ describe('Haiku as the rephraser', () => {
     expect(searches).toEqual(['maximum speed limit highway', 'speed limit miles per hour'])
     expect(searches.length).toBe(REPHRASE_SEARCHES)
     const body = sent[0] as { model: string; messages: { content: string }[] }
-    expect(body.model).toBe(REPHRASE_MODEL)
+    expect(body.model).toBe(HAIKU_MODEL)
     expect(body.messages).toEqual([{ role: 'user', content: 'what is the highest posted speed limit' }])
   })
 
@@ -89,6 +89,19 @@ describe('Haiku as the rephraser', () => {
   // not is said here, in the rephraser's own words, and not in the family.
   it('tells Haiku that being pulled over or caught, and an offence\'s fine, are not ticket-procedure', () => {
     expect(REPHRASE_RULES).toContain('"ticket-procedure" is only a ticket the learner already has. It is not the penalty or the fine for an offence, and not a question about being pulled over, stopped or caught doing something')
+  })
+
+  // Every code and manual is English, and a Spanish parking or right-of-way
+  // question came back with no searches at all -- "¿a qué distancia de un
+  // hidrante puedo estacionar?" three runs in three, six of fifteen natural
+  // Spanish road-law questions -- so retrieval ran on the Spanish words alone
+  // against English text, while the same question in English got its search.
+  it('tells Haiku a Spanish road-law question is road law and is searched for in English', async () => {
+    const sent: unknown[] = []
+    await haikuRephraseFor(undefined, answering('{"searches":["parking distance from fire hydrant"],"family":"none"}', sent))!('¿a qué distancia de un hidrante puedo estacionar?')
+    const system = (sent[0] as { system: string }).system
+    expect(system).toContain('Every code and manual is written in English, so every search is in English, whatever language the question is in.')
+    expect(system).toContain('A question in Spanish is road law exactly as it would be in English: "¿a qué distancia de un hidrante puedo estacionar?" is "parking distance from fire hydrant"')
   })
 
   it('is absent without a key, so retrieval runs on the question alone', () => {

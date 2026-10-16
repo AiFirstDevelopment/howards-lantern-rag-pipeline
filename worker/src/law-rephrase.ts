@@ -28,8 +28,15 @@
  */
 import Anthropic from '@anthropic-ai/sdk'
 import { PROCESS_FAMILIES, isProcessFamily, type ProcessFamily } from './process-families'
+import { carryingUsage, usageOf, type Usage } from './usage'
 
-export const REPHRASE_MODEL = 'claude-haiku-4-5-20251001'
+/**
+ * The rephraser's model, and the eval judge's (worker/src/eval-judge.ts): one
+ * constant, so the calibration that says the judge can be trusted is the
+ * calibration of the model that judges -- a judge moved to another model
+ * without it would gate on agreement measured for a different one.
+ */
+export const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
 
 /** How long the box waits before searching with the question alone; it runs before every question with a state. */
 const REPHRASE_TIMEOUT_MS = 5000
@@ -43,6 +50,7 @@ Use the law's names for things: "maximum speed limit" for the highest limit, "in
 Keep the kind of figure asked about (feet, miles per hour, days, years, dollars) but never a figure.
 When the question asks what happens, what if, will I, do I have to, or how much, write two searches: one for the duty, as a code states what a driver must or may not do ("have in possession", "display on demand"), and one for its penalty or defence in the words a code uses for them ("fine", "offense", "defense to prosecution", "produces in court", "points", "suspend").
 Not having your license with you ("I don't have it on me", "no llevo mi licencia") is the duty to have it in your possession and display it on demand, not driving without a license, which is a different offence: search for the duty to carry it.
+Every code and manual is written in English, so every search is in English, whatever language the question is in. A question in Spanish is road law exactly as it would be in English: "¿a qué distancia de un hidrante puedo estacionar?" is "parking distance from fire hydrant", "¿dónde no puedo estacionar?" is "parking prohibited places".
 Each search is at most eight words. Return no searches if the question is not about road law.
 Also name the one family of process question it is, if it is one of these, or "none":
 ${PROCESS_FAMILIES.map((family) => `- ${family.id}: ${family.covers}`).join('\n')}
@@ -65,7 +73,7 @@ const SCHEMA = {
  * the nationwide loop, the judge, a test's stub returning plain strings --
  * reads it as it always did.
  */
-export type Searches = string[] & { family?: ProcessFamily }
+export type Searches = string[] & { family?: ProcessFamily; usage?: Usage }
 
 /**
  * A search's learner words that no code uses, said as the codes say them.
@@ -98,7 +106,7 @@ export function haikuRephraseFor(apiKey: string | undefined, client?: RephraseCl
   const anthropic = client ?? new Anthropic({ apiKey, timeout: REPHRASE_TIMEOUT_MS, maxRetries: 0 })
   return async (question) => {
     const response = await anthropic.messages.create({
-      model: REPHRASE_MODEL,
+      model: HAIKU_MODEL,
       max_tokens: 128,
       system: REPHRASE_RULES,
       output_config: { format: { type: 'json_schema', schema: SCHEMA } },
@@ -108,11 +116,16 @@ export function haikuRephraseFor(apiKey: string | undefined, client?: RephraseCl
       .filter((block) => block.type === 'text')
       .map((block) => (block as Anthropic.TextBlock).text)
       .join('')
-    const parsed = JSON.parse(text) as { searches?: unknown; family?: unknown }
-    const searches = parsed.searches
-    if (!Array.isArray(searches) || searches.some((search) => typeof search !== 'string')) {
-      throw new Error(`the rephraser answered with no searches: ${text}`)
+    let parsed: { searches?: unknown; family?: unknown }
+    try {
+      parsed = JSON.parse(text) as { searches?: unknown; family?: unknown }
+      if (!Array.isArray(parsed.searches) || parsed.searches.some((search) => typeof search !== 'string')) {
+        throw new Error(`the rephraser answered with no searches: ${text}`)
+      }
+    } catch (error) {
+      throw carryingUsage(error, response)
     }
+    const searches = parsed.searches
     const kept: Searches = (searches as string[])
       .map((search) => search.trim())
       .filter((search) => search.length > 0 && search.length <= 80)
@@ -121,6 +134,7 @@ export function haikuRephraseFor(apiKey: string | undefined, client?: RephraseCl
     // A family the list does not hold is no family: it would look up rows
     // no fetch ever stored, and find nothing, silently.
     if (isProcessFamily(parsed.family)) kept.family = parsed.family
+    kept.usage = usageOf(response)
     return kept
   }
 }

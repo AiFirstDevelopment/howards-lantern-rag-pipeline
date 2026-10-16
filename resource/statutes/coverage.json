@@ -171,6 +171,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "AL-158"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "AL-C-32-5A-245-a"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "AL-426"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "AL-101"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "AL-C-32-5A-80-b"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "AL-421"
     }
   },
   "AK": {
@@ -345,6 +365,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools define the texting-while-driving offence (AS 28.35.161(a)) and say it is unlawful (AK-223); AS 28.35.161(f) classes it as a violation punished as provided in AS 12.55, but no law states a fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "AK-C-13-AAC-04.350-a"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "AK-C-13-AAC-04.223-b"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "Pool A holds only general passing rules (AK-327 'safe distance'), bicycle equipment and lighting rules, and the right-of-way rule (AK-447), none of which gives a specific distance for passing a bicycle; no pool B id is one I know states it with certainty."
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "AK-277"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "AK-075"
     }
   },
   "MD": {
@@ -519,6 +559,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold MD-141 saying hand-held phone use including texting is illegal while driving, plus fines for Move Over, speed camera, red light and gambling violations, but no law states a fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MD-C-21-1306-b"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "MD-C-22-406-i"
+    },
+    "bike-passing": {
+      "from": "code",
+      "law": "MD-C-21-1209-a-2"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MD-127"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "MD-C-17-103-b"
     }
   },
   "AR": {
@@ -693,6 +753,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the No Texting Law itself (AR-236, texting not allowed while driving regardless of age), the under-18 cell phone ban and texting-distraction facts, but no law states a fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A holds only motorcycle-awareness, seat belt and eyewear laws, none stating who must wear a protective helmet on a motorcycle, and no pool B id is one I know states Arkansas's helmet rule."
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds only manual passages on mirrors, windows for backing, tinted glasses at night and similar topics, none stating the percentage of light a tinted side or rear window must let through, and no pool B id is one I know states it (Ark. Code 27-37-306 is not listed)."
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "Pool A has Arkansas manual laws on passing bicycles (honk, don't pass between a cyclist and oncoming traffic) but none gives a required passing distance, such as a 3-foot clearance; a pool B id is not one I can confirm states it."
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "AR-168"
+    },
+    "insurance-minimum": {
+      "from": "none",
+      "reason": "Pool A only covers crash reporting thresholds, showing proof of insurance to an officer and exchanging insurance information, but none states the minimum liability coverage amounts for bodily injury or death of one person and property damage, and I cannot confidently identify a pool B id as stating them."
     }
   },
   "AZ": {
@@ -867,6 +947,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: AZ-C-28-914-D"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "AZ-C-28-964-A"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "AZ-C-28-959.01-A-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "AZ-409"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "AZ-308"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "AZ-C-28-4009-A-ii"
     }
   },
   "CO": {
@@ -1041,6 +1141,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Pool A has the texting ban (CO-405) and a manual line that careless driving from texting could be fined or charged as a misdemeanor (CO-406) but with no amount, and Pool B's fine provisions cover other offences, so no law gives the texting fine."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "CO-C-42-4-1502-4.5-I"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "CO-C-42-4-227-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "CO-454"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "CO-324"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "CO-C-10-4-620-p1"
     }
   },
   "CT": {
@@ -1215,6 +1335,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the texting prohibition (§ 14-296aa(b)), the work-zone doubling of distracted driving fines, and § 14-296aa(i), which only refers to subsection (h) for fines, but no law states the dollar amount of the fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "CT-C-14-289g-a"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "CT-C-14-99g-c-5"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "CT-181"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "CT-C-14-230-b"
+    },
+    "insurance-minimum": {
+      "from": "none",
+      "reason": "Pool A has laws that refer to the section 14-112 limits (CT-C-38a-335-a) and figures for special vehicles (vanpool, buses, leased vehicles), but none states the general minimum for bodily injury or death of one person and property damage; CT-C-14-112-b in pool B is the one that is not available in pool A, and I am not certain it states the figure, so none is named."
     }
   },
   "DE": {
@@ -1389,6 +1529,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Pool A's DE-379 and DE-381 state Delaware's ban on hand-held phone use, texting and other hand-held devices while driving, and the pools hold fines for other offences (aggressive driving, driving while suspended, school bus driver phone use and others), but no law gives the fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "DE-C-4185-b-2"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "DE-C-4313-c"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "DE-533"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "DE-C-4114-b"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "DE-269"
     }
   },
   "CA": {
@@ -1563,6 +1723,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Pool A holds rules prohibiting texting and handheld phone use while driving (CA-572, CA-570, CA-C-23123-a) and a commercial-vehicle texting definition, and Pool B holds fines for reckless driving, work zones, school buses and driving logs, but no law states the fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "CA-C-27803-a"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A covers the ban on materials on windows (26708(a)), the exemptions, and the sticker-size limits, but none states a minimum light transmittance percentage for tinted side or rear windows; the pool B ids are not known to state that figure with certainty either."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "CA-364"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "CA-382"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "CA-610"
     }
   },
   "DC": {
@@ -1737,6 +1917,26 @@
     "texting-fine": {
       "from": "code",
       "law": "DC-C-50-1731.06-a"
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A holds only bicycle and skate helmet laws for people under 16, plus unrelated motorcycle driver tips and a seat belt rule; none states who must wear a helmet on a motorcycle, and no pool B id is one I know states it (DC's motorcycle helmet rule is in 18 DCMR, not listed)."
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "DC-C-50-2207.02-a"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "only with the index: DC-C-50-1641.02-a"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "DC-405"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "DC-C-31-2406-c"
     }
   },
   "FL": {
@@ -1911,6 +2111,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools say texting while driving is illegal (FL-145, FL-C-316.305-3) and carries 3 points (FL-127), and give a $2,750 civil penalty only for third and subsequent commercial-vehicle texting violations (FL-C-316.3025-6-3), but no law states the fine for an ordinary driver's texting violation."
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "FL-569"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "FL-C-316.2954-1-a"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "FL-520"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "FL-C-316.081-2"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "FL-C-324.021-7"
     }
   },
   "GA": {
@@ -2085,6 +2305,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "GA-205"
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A holds only manual laws on sharing the road with motorcycles, seat belts and HOV lanes, none of which says who must wear a motorcycle helmet; no pool B id is one I know to state the helmet rule, which is in the Georgia code (OCGA 40-6-315), so it is not cited."
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds only manual laws on highway hypnosis, signals, passing, bicycles, No-Zones and similar topics, and none gives the percentage of light a tinted side or rear window must let through; I know of no pool B id that clearly states it (Georgia's tint rule is in O.C.G.A. 40-8-73.1, not tied to any listed id)."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "GA-216"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "GA-099"
+    },
+    "insurance-minimum": {
+      "from": "none",
+      "reason": "Pool A holds laws on crash reporting, DUI, speed and vision but none states Georgia's minimum liability insurance coverage for bodily injury or death of one person and property damage, and I cannot confidently identify any pool B id as that rule."
     }
   },
   "HI": {
@@ -2259,6 +2499,26 @@
     "texting-fine": {
       "from": "code",
       "law": "HI-C-291C-137-f"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "HI-C-286-81-e"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "HI-C-291-21.5-e-8"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "HI-521"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "HI-106"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "HI-262"
     }
   },
   "IA": {
@@ -2433,6 +2693,26 @@
     "texting-fine": {
       "from": "code",
       "law": "IA-C-805.8A-14-4"
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A holds motorcycle seating, passenger, lane-use, seat belt and OWI laws, but none says who must wear a protective helmet; Iowa has no universal helmet law, and the pool B ids (such as IA-C-321.386-p1 and IA-C-321.385-p1) are not known to state a helmet rule for riders."
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "IA-215"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "IA-482"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "IA-C-321.297-2"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "IA-C-321A.21-2-p2"
     }
   },
   "ID": {
@@ -2607,6 +2887,26 @@
     "texting-fine": {
       "from": "code",
       "law": "ID-C-49-1401A-4"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "ID-C-49-666-1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "ID-C-49-944-1-b"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "the manual gives the distance as advice (should, try for, recommended), not as a rule the law states, and no law in the pool states one"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "ID-C-49-630-2"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "ID-C-49-117-20"
     }
   },
   "IL": {
@@ -2781,6 +3081,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: IL-C-12-610.2-c"
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A has eye protection (glasses, goggles or a transparent shield) for operators and passengers, and a ban on local helmet ordinances, but no law saying who must wear a protective helmet; Illinois has no universal helmet requirement and no pool B id is one I know states it."
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "IL-C-12-503-a-5-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "IL-281"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "IL-183"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "IL-C-7-317-b-3"
     }
   },
   "IN": {
@@ -2955,6 +3275,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold Indiana's hand-held device prohibition with its 911 and hands-free exceptions (IN-030), the 4-point penalty for a hand-held device violation (IN-033) and unrelated fine provisions (such as the up to $500 fine in IC 7.1-5-7-5.1, which concerns minors and alcohol), but no law states a fine amount for texting or hand-held device use while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "IN-C-9-19-7-1-b"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "IN-C-9-19-19-4-c"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "IN-263"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "IN-C-9-21-8-2-b"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "IN-047"
     }
   },
   "KS": {
@@ -3129,6 +3469,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Pool A has the texting ban without a fine (KS-122), and Pool B's fine-schedule excerpts (K.S.A. 8-2118(c)) list other offences such as improper backing and pedestrian violations, so neither pool states a fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "KS-C-8-1598-a"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds K.S.A. 8-1749a(a) and (a)(2) (nonreflective sun screening) and 8-1741 (obstruction), but none states the light transmission percentage for tinted side or rear windows; the figure is in sub-paragraphs such as 8-1749a(a)(3), which is only in pool B and not given as text, so it cannot be named as the answer."
+    },
+    "bike-passing": {
+      "from": "code",
+      "law": "KS-C-8-1516-c"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "KS-C-8-1514-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "KS-C-40-3107-e"
     }
   },
   "KY": {
@@ -3303,6 +3663,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold only texting-distraction facts (eye-off-road time, crash risk) and fines for other offences such as drug/alcohol violations, speeding, work zones, handicapped parking and school bus passing, but no law states the fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "KY-C-189.285-3"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "KY-C-189.110-3"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "KY-474"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "KY-617"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "KY-C-304.39-110-1-a"
     }
   },
   "LA": {
@@ -3477,6 +3857,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: LA-C-32-59-D-3"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "LA-C-32-190-A"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "LA-C-32-361.1-C-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "LA-533"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "LA-C-32-71-B-c"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "LA-C-32-900-B-2"
     }
   },
   "MA": {
@@ -3651,6 +4051,26 @@
     "texting-fine": {
       "from": "code",
       "law": "MA-C-90-13B-d"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MA-C-90-7-p1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "MA-C-90-9D-4"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "MA-226"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MA-503"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "MA-C-90-34A-p5"
     }
   },
   "ME": {
@@ -3825,6 +4245,26 @@
     "texting-fine": {
       "from": "code",
       "law": "ME-C-29-A-2119-3-A"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "ME-C-29-A-2083-1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "ME-C-29-A-1916-1-C"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "ME-650"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "ME-352"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "ME-C-29-A-1605-1-C"
     }
   },
   "MI": {
@@ -3999,6 +4439,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "MI-121"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MI-C-257.658-4"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds MCL 257.709 provisions that allow tinting on rear and rear side windows (3)(b) and cap reflectance at 35% (1)(b), but none sets a minimum percentage of light transmission, and the pool B ids are not known to state one."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "MI-440"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MI-244"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "MI-C-257.518b-1-i"
     }
   },
   "MN": {
@@ -4173,6 +4633,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Neither pool states a fine for texting while driving: they hold the ban on composing, reading or sending electronic messages while driving (MN-360) and definitions of electronic messages, cellular phones and wireless devices, plus fines for DWI, work-zone speeding, school-bus passing, seat belts and uninsured driving, but no fine amount for the texting offence."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MN-C-169.974-subd.-4-a"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "MN-175"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "MN-454"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MN-690"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "MN-C-65B.49-subd.-3-1"
     }
   },
   "MO": {
@@ -4347,6 +4827,26 @@
     "texting-fine": {
       "from": "code",
       "law": "MO-C-304.822-6-2"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MO-C-302.020-2"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "MO-781"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "MO-269"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "MO-C-304.015-5-3"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "MO-C-303.190-2-2"
     }
   },
   "MS": {
@@ -4521,6 +5021,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the texting prohibition (MS-109), the social-networking ban (MS-110), and definitions of text messages and hand-held phones (MS-111, MS-112), plus DUI fines, but no law states a fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "MS-038"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "MS-498"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "MS-468"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MS-276"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "MS-501"
     }
   },
   "MT": {
@@ -4695,6 +5215,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold manual laws on the dangers of texting and a note that most Montana cities have their own texting and cell-phone laws, plus code fines for DUI, uninsured driving and other offences, but no law states a fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "MT-C-61-9-417-1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "MT-C-61-9-405-4-c"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "the manual gives the distance as advice (should, try for, recommended), not as a rule the law states, and no law in the pool states one"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "MT-547"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "MT-399"
     }
   },
   "NC": {
@@ -4869,6 +5409,26 @@
     "texting-fine": {
       "from": "code",
       "law": "NC-C-20-137.4A-c"
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "NC-153"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "NC-C-20-127-b-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NC-227"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "NC-206"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "NC-C-20-279.21-b-2"
     }
   },
   "ND": {
@@ -5043,6 +5603,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "ND-364"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "ND-C-39-10.2-06-1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "ND-C-39-21-39-4"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "ND-396"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "ND-C-39-10-08-2"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "ND-C-39-16.1-11-2-p2"
     }
   },
   "NE": {
@@ -5217,6 +5797,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "NE-617"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "NE-C-60-6-279-2"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "NE-272"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NE-664"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "NE-412"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "NE-258"
     }
   },
   "NH": {
@@ -5391,6 +5991,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: NH-C-265-79-c-III"
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "NH-181"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "NH-C-266-58-a-III"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NH-565"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "NH-C-265-16-II"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "NH-C-259-61-I"
     }
   },
   "NJ": {
@@ -5565,6 +6185,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: NJ-C-39-4-97.3-d-1"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "NJ-C-39-3-76.7-a"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A has the manual's ban on add-on tinting of windshields and front side windows (NJ-039) and the code provision directing the director to set maximum light transmittance standards for medical-exemption tint (NJ-C-39-3-75.2-2-p2), but neither states a percentage of light that a tinted side or rear window must let through, and no pool B id is one I know states it."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NJ-288"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "NJ-098"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "NJ-C-39-6B-1-a"
     }
   },
   "NM": {
@@ -5739,6 +6379,26 @@
     "texting-fine": {
       "from": "code",
       "law": "NM-C-66-8-116-A-p6"
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "NM-505"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "NM-C-66-3-846.1-B"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "the manual gives the distance as advice (should, try for, recommended), not as a rule the law states, and no law in the pool states one"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "NM-174"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "NM-479"
     }
   },
   "NV": {
@@ -5913,6 +6573,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the texting ban (NV-194, NRS 484B.165(1)) without any fine, plus fines for other offences such as reckless driving (NRS 484B.653) and aggressive driving (NRS 484B.650), but no law states the fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "NV-C-486.231-2"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "NV-C-484D.440-3-b"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NV-236"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "NV-147"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "NV-C-485.185-1"
     }
   },
   "NY": {
@@ -6087,6 +6767,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "NY-249"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "NY-C-381-6"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "NY-C-375-12-a-b"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "NY-112"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "NY-C-1120-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "NY-C-345-b-3"
     }
   },
   "OH": {
@@ -6261,6 +6961,26 @@
     "texting-fine": {
       "from": "code",
       "law": "OH-C-4511.204-D-1"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "OH-C-4511.53-C"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "OH-006"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "OH-194"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "OH-C-4511.25-B"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "OH-134"
     }
   },
   "OK": {
@@ -6435,6 +7155,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools state only that texting while driving is illegal in Oklahoma (OK-566) and give fines for other offences such as DUI, speeding and driving without a license, but no law states the fine for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "OK-029"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds manual laws on backing through the rear window, elbows out of windows, lights and signals, but none gives a minimum light transmission percentage for tinted side or rear windows, and I cannot confidently identify a pool B id that does."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "OK-460"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "OK-298"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "OK-274"
     }
   },
   "OR": {
@@ -6609,6 +7349,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold ORS 811.507's definitions of using a mobile electronic device, the first-conviction fine-suspension and distracted driving course provisions, and a $2,000 minimum fine only for a Class B misdemeanor under subsection (5)(d), which is a repeat offence. No law states the fine for an ordinary texting-while-driving offence, such as the Class B violation fine under subsection (5)(a)."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "OR-C-814.269-1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "OR-C-815.221-2"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "OR-184"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "OR-077"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "OR-321"
     }
   },
   "PA": {
@@ -6783,6 +7543,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "PA-242"
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "PA-C-3525-a states the requirement without its exception for riders 21 and older (3525(d)), which the pool does not hold, so read alone it says every rider must wear a helmet"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds 75 Pa.C.S. § 4524(b) on nontransparent material that obstructs the driver's view, and § 4524(e)(1)-(3) on sun screening and exemptions, but none gives a light transmittance percentage for tinted side or rear windows. Pool B ids do not clearly supply that figure either."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "PA-181"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "PA-C-3301-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "PA-C-1702-3-p2"
     }
   },
   "RI": {
@@ -6957,6 +7737,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "RI-290"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "RI-C-31-10.1-4-p1"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "RI-625"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "RI-491"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "RI-C-31-15-2-p1"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "RI-C-31-47-2-13-A"
     }
   },
   "SC": {
@@ -7131,6 +7931,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "SC-107"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "SC-C-56-5-3660-p1"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "SC-C-56-5-5015-C"
+    },
+    "bike-passing": {
+      "from": "code",
+      "law": "SC-C-56-5-3435-p1"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "SC-C-56-5-1810-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "SC-C-56-9-20-11"
     }
   },
   "SD": {
@@ -7305,6 +8125,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold SD-131 (texting while driving is prohibited by state law) and the permit-holder wireless device ban (SD-033), plus fines for other offences such as DWI, work-zone speeding, insurance and disabled parking, but no law states the fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "SD-C-32-20-4-p1"
+    },
+    "window-tint": {
+      "from": "manual",
+      "law": "SD-194"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "SD-655"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "SD-520"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "SD-C-32-35-70-p1"
     }
   },
   "TN": {
@@ -7479,6 +8319,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the rule that a driver may not write, send or read any text-based communication (TN-051) and fines for other offences such as DUI, school bus and work zone speeding, but no law states a fine amount for texting while driving."
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "Pool A has only TN-761, which says motorcyclists should wear a DOT-compliant helmet but does not state who is required to wear one; the other motorcycle laws concern sharing the road, and no pool B id is one I know states the helmet requirement."
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds only manual laws on rear-window backing, mirrors, clearing windows and dark sunglasses, none of which gives the percentage of light a tinted side or rear window must let through, and no pool B id is one I know states it."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "TN-432"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "TN-133"
+    },
+    "insurance-minimum": {
+      "from": "none",
+      "reason": "Pool A covers liability insurance in general, proof of financial responsibility and crash reporting, but none of its laws gives the minimum coverage figures for bodily injury or death of one person and property damage, and no pool B id is one I know states them."
     }
   },
   "TX": {
@@ -7653,6 +8513,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "The pools hold the texting ban without any fine (TX-530), the texting statute's Class A penalty of up to $4,000 only where the texter causes death or serious bodily injury (TX-C-545.4251-f), and the reckless driving fine of up to $200 (TX-C-545.401-b), but no law states the fine for an ordinary texting-while-driving offense."
+    },
+    "motorcycle-helmet": {
+      "from": "none",
+      "reason": "TX-C-661.003-a states the requirement without its exception for riders 21 and older (661.003(c)), which the pool does not hold, so read alone it says every rider must wear a helmet"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "TX-C-547.613-b-2"
+    },
+    "bike-passing": {
+      "from": "none",
+      "reason": "Pool A holds general passing rules (pass to the left 'at a safe distance' in TX-C-545.053-a, 200 feet to return in TX-347) and bicycle lighting and right-of-way rules, but none gives a specific distance for passing a bicycle; the Texas 3-foot passing rule (Transp. Code 551.106 is not it; the safe passing distance statute is 545.053(a-1) type provision) is not in the pools by id."
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "TX-C-545.051-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "TX-C-601.072-a-1"
     }
   },
   "UT": {
@@ -7827,6 +8707,26 @@
     "texting-fine": {
       "from": "manual",
       "law": "UT-510"
+    },
+    "motorcycle-helmet": {
+      "from": "manual",
+      "law": "UT-728"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A only gives the front side window limit (UT-C-41-6a-1635-1-b: not less than 35% light transmittance, 5% variance) and says nontransparent material may be used on rear windows (UT-C-41-6a-1635-3(c)); neither states a light-transmittance figure for tinted rear side or rear windows, and no pool B id is one I know states it."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "UT-665"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "UT-C-41-6a-701-3"
+    },
+    "insurance-minimum": {
+      "from": "none",
+      "reason": "Pool A only describes liability coverage in general terms (UT-619) or mentions limits by cross-reference (UT-C-41-12a-501-1-b), but none states the minimum per-person bodily injury/death and property damage figures; the pool B ids (e.g. UT-620, UT-729) are not ones I know state the figures with certainty."
     }
   },
   "VA": {
@@ -8001,6 +8901,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: VA-C-46.2-818.2-C"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "VA-C-46.2-910-A"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "VA-C-46.2-1052-D-1"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "VA-137"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "VA-132"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "VA-291"
     }
   },
   "VT": {
@@ -8175,6 +9095,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "only with the index: VT-C-1099-c"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "VT-C-1256-p1"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A holds 23 V.S.A. § 1125(a), (b) and (d) on obstructed or adhered window material and mirrors, but none gives a light-transmission percentage for tinted side or rear windows; the figure may sit in a pool B subsection such as VT-C-1125-b-1 to b-6, but I cannot confirm that it does."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "VT-251"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "VT-C-1031-b"
+    },
+    "insurance-minimum": {
+      "from": "manual",
+      "law": "VT-480"
     }
   },
   "WA": {
@@ -8349,6 +9289,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "Pool A's RCW 46.61.672(1) makes using a personal electronic device while driving a traffic infraction but only says the fine is 'as provided in RCW 46.63.110(3)' without a figure. WA-081 and RCW 46.61.672(4) cover doubled fines for later violations, and RCW 46.61.673(1)'s thirty dollars is for the separate offence of driving dangerously distracted, so no law gives the dollar amount for a texting-while-driving fine."
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "WA-C-46.37.530-1-c"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "only with the index: WA-C-46.37.430-5-a"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "WA-135"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "WA-149"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "WA-C-46.29.490-2-b"
     }
   },
   "WI": {
@@ -8523,6 +9483,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "the pool holds the ban on composing or sending a text while driving (Wis. Stat. § 346.89(3)) and fines for other offences, but no law states the fine for texting while driving"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "WI-C-347.485-1"
+    },
+    "window-tint": {
+      "from": "none",
+      "reason": "Pool A has nothing on window tint light transmittance; WI-C-346.88-3 bans nontransparent material on windows and WI-C-346.88-4 requires clean windows, but neither gives a percentage of light that must pass through, and no pool B id is one I know states it."
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "WI-260"
+    },
+    "keep-right": {
+      "from": "manual",
+      "law": "WI-041"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "WI-C-344.01-2-d"
     }
   },
   "WV": {
@@ -8697,6 +9677,26 @@
     "texting-fine": {
       "from": "code",
       "law": "WV-C-17C-14-15-h-1"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "WV-C-17C-15-44-a"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "WV-C-17C-15-36a-c"
+    },
+    "bike-passing": {
+      "from": "code",
+      "law": "WV-C-17C-7-3-a-2"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "WV-C-17C-7-1-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "WV-C-17D-4-2-b"
     }
   },
   "WY": {
@@ -8871,6 +9871,26 @@
     "texting-fine": {
       "from": "none",
       "reason": "the manual says Wyoming law prohibits reading or sending a text while driving (WY-484) and the pools give no fine for it"
+    },
+    "motorcycle-helmet": {
+      "from": "code",
+      "law": "WY-C-31-5-115-o"
+    },
+    "window-tint": {
+      "from": "code",
+      "law": "WY-C-31-5-962-e"
+    },
+    "bike-passing": {
+      "from": "manual",
+      "law": "WY-274"
+    },
+    "keep-right": {
+      "from": "code",
+      "law": "WY-C-31-5-201-b"
+    },
+    "insurance-minimum": {
+      "from": "code",
+      "law": "WY-C-31-9-405-b-ii"
     }
   }
 }

@@ -121,6 +121,38 @@
     },
     {
       "id": "past-curfew",
+      "lang": "en",
+      "question": "What happens if I'm driving past my curfew with a provisional license?",
+      "answer": "Maryland law lets you drive alone only between 5 a.m. and midnight, unless an exception applies. Breaking it is a $70 ticket, no points, payable without court. It also restarts your 18-month wait for a full license.",
+      "sources": [
+        "MD-C-16-113-d-2",
+        "MD-C-16-113-i",
+        "MD-P-16-113-i",
+        "MD-C-16-111-d"
+      ],
+      "cited": {
+        "MD-C-16-113-d-2": {
+          "asOf": "2026-10-05",
+          "hash": "1e4f4a175f092aa8c946d6fea0ca7af6ca030727d53e547aab3c8ccf947c3e12"
+        },
+        "MD-C-16-113-i": {
+          "asOf": "2026-10-05",
+          "hash": "213a46c50e11fc53705bbf14d648ba2aa640a78469fe020564515648376c06cf"
+        },
+        "MD-P-16-113-i": {
+          "asOf": "2026-10-11",
+          "hash": "51a0ed2de9f8b094d469e20b62d0e785aae7649eea3019a224a82a3e3100f96e"
+        },
+        "MD-C-16-111-d": {
+          "asOf": "2026-10-06",
+          "hash": "f4281cc030dd6b9ab2256b294f310fef3fb85f1feb96611f0c43172fed55fc0b"
+        }
+      },
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "past-curfew",
       "lang": "es",
       "question": "¿Qué pasa si manejo después de la hora permitida con mi licencia provisional?",
       "answer": "Con licencia provisional no puedes manejar solo entre la medianoche y las 5 de la mañana, salvo por trabajo, voluntariado organizado, actividad escolar oficial o un evento deportivo. Si te paran, es una multa de $70, sin puntos y sin ir al tribunal.",
@@ -271,6 +303,28 @@
       "model": "claude-opus-5-5"
     },
     {
+      "id": "insurance-need",
+      "lang": "es",
+      "question": "¿Qué seguro de auto necesito para manejar?",
+      "answer": "Necesitas un seguro de responsabilidad civil para tu carro. Debe cubrir al menos $30,000 por persona herida, $60,000 por accidente y $15,000 por daños a la propiedad.",
+      "sources": [
+        "MD-R-insurance-minimums-1",
+        "MD-C-17-103-a"
+      ],
+      "cited": {
+        "MD-R-insurance-minimums-1": {
+          "asOf": "2026-10-11",
+          "hash": "20e86e310debdab0caa7b8abc7b91ec784d10ecf2c984393b13a62dc84d4c69b"
+        },
+        "MD-C-17-103-a": {
+          "asOf": "2026-10-06",
+          "hash": "7a141c8327f1727685582fdaabd7c9e7064b9cad131919fa57b5a09b38b35c25"
+        }
+      },
+      "asOf": "2026-10-14",
+      "model": "claude-opus-5-5"
+    },
+    {
       "id": "crash-parents-car",
       "lang": "en",
       "question": "What happens if I crash my parents' car?",
@@ -395,6 +449,43 @@
         }
       },
       "asOf": "2026-10-11",
+      "model": "claude-opus-5-5"
+    },
+    {
+      "id": "school-zone-fine",
+      "lang": "en",
+      "question": "How much is the fine for speeding in a school zone?",
+      "answer": "In a posted double-fine school zone, it's $120 for 1 to 9 mph over, $140 for 10 to 19. It's $270 for 20 to 29 over, $540 for 30 to 39, and $1,000 for 40 and over. You can pay without going to court, with 1 to 6 points.",
+      "sources": [
+        "MD-P-21-803-1-e",
+        "MD-P-21-803-1-e-2",
+        "MD-P-21-803-1-e-3",
+        "MD-P-21-803-1-e-4",
+        "MD-P-21-803-1-e-5"
+      ],
+      "cited": {
+        "MD-P-21-803-1-e": {
+          "asOf": "2026-10-11",
+          "hash": "6a1db9416f147394ee65d2a8f3999ed51c52edb8260eb109042d3271d61ba88f"
+        },
+        "MD-P-21-803-1-e-2": {
+          "asOf": "2026-10-11",
+          "hash": "fa4a24c616bc746be02630cc9cc9061efd0deb0290565092f44f9e0e2b58ca35"
+        },
+        "MD-P-21-803-1-e-3": {
+          "asOf": "2026-10-11",
+          "hash": "f6732b49e58f4da6906e13c220af96a11c07957124c2814ce98ec554e3f336f3"
+        },
+        "MD-P-21-803-1-e-4": {
+          "asOf": "2026-10-11",
+          "hash": "45753bfbf037f8d0a5a1c1f2d4836cdc16d91aecf54ddc3f1430796490c24322"
+        },
+        "MD-P-21-803-1-e-5": {
+          "asOf": "2026-10-11",
+          "hash": "805c0cc7788ff38725480f00bf1f9c6f1d9557f45e3bcfb10a399c2ac02aa8c7"
+        }
+      },
+      "asOf": "2026-10-14",
       "model": "claude-opus-5-5"
     },
     {

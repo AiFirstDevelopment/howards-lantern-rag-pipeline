@@ -1213,3 +1213,59 @@ CREATE INDEX IF NOT EXISTS idx_learner_questions_credit ON learner_questions(cre
 -- mark its free code-holding rows as paid.
 ALTER TABLE learner_questions ADD COLUMN paid INTEGER NOT NULL DEFAULT 0;
 UPDATE learner_questions SET paid = 1 WHERE credit_code IS NOT NULL;
+
+-- The asking browser's analytics id -- the `session` on its events -- so the
+-- Learners tab's Asked tile counts learners rather than questions, follows the
+-- population toggle, and opens onto who asked what (Joel, 2026-10-15). NULL on
+-- every row written before, and from a client too old to send it.
+--
+-- One-shot on production, before the worker that writes it deploys: a worker
+-- deployed first fails every question on the INSERT that names the column.
+ALTER TABLE learner_questions ADD COLUMN session TEXT;
+CREATE INDEX IF NOT EXISTS idx_learner_questions_session ON learner_questions(session);
+
+-- The eval lifecycle, phase 0 (docs/plans/eval-lifecycle-build.md, decisions
+-- 1-2): the columns and tables every later phase writes -- a question's trace,
+-- timing and tokens, a learner's rating, the labelling queue and its labels,
+-- the nightly judge's scores, the daily rollup and the recorded eval runs.
+-- Nothing reads or writes any of it until phase 1's worker.
+--
+-- `trace` is one JSON object, {pool, chosen, given, searches}: the law ids at
+-- each hop, so a wrong answer can be attributed to the stage that lost the law.
+-- `ask_daily.reasons` is one JSON object ({"ungrounded": 3, ...}) rather than a
+-- column per refusal reason, so a new reason needs no migration.
+--
+-- One-shot on production, every statement from here to the end of this block,
+-- once, by hand, before phase 1's worker deploys: SQLite has no ADD COLUMN IF
+-- NOT EXISTS, so a second run fails on the first ALTER, and a phase-1 worker
+-- deployed first fails every question on the INSERT that names `trace`.
+ALTER TABLE learner_questions ADD COLUMN latency_ms INTEGER;
+ALTER TABLE learner_questions ADD COLUMN tokens_in INTEGER;
+ALTER TABLE learner_questions ADD COLUMN tokens_out INTEGER;
+ALTER TABLE learner_questions ADD COLUMN trace TEXT;      -- JSON {pool,chosen,given,searches}
+CREATE TABLE IF NOT EXISTS answer_ratings (
+  question_id INTEGER PRIMARY KEY, rating INTEGER NOT NULL, rated_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS eval_candidates (
+  question_id INTEGER PRIMARY KEY, sampled_at INTEGER NOT NULL,
+  reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open');
+CREATE INDEX IF NOT EXISTS idx_eval_candidates_status ON eval_candidates(status, sampled_at);
+CREATE TABLE IF NOT EXISTS eval_labels (
+  question_id INTEGER PRIMARY KEY, labelled_at INTEGER NOT NULL, verdict TEXT NOT NULL,
+  contains TEXT, not_contains TEXT, gold TEXT, holdout INTEGER NOT NULL DEFAULT 0,
+  promoted_at INTEGER);
+CREATE TABLE IF NOT EXISTS answer_scores (
+  question_id INTEGER PRIMARY KEY, scored_at INTEGER NOT NULL,
+  faithful INTEGER, relevant INTEGER, judge_model TEXT, judge_agreement REAL);
+CREATE TABLE IF NOT EXISTS ask_daily (
+  day TEXT PRIMARY KEY, asked INTEGER NOT NULL, shown INTEGER NOT NULL, refused INTEGER NOT NULL,
+  reasons TEXT NOT NULL, faithful_rate REAL, relevant_rate REAL,
+  rated_up INTEGER NOT NULL, rated_down INTEGER NOT NULL,
+  p50_latency_ms INTEGER, p95_latency_ms INTEGER, tokens_in INTEGER, tokens_out INTEGER, cost_usd REAL);
+CREATE TABLE IF NOT EXISTS eval_runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ran_at INTEGER NOT NULL, trigger TEXT NOT NULL,
+  commit_sha TEXT NOT NULL, prompt_sha TEXT, corpus_hash TEXT, cases INTEGER NOT NULL,
+  right INTEGER NOT NULL, recall REAL, mrr REAL, rerank_survival REAL, widening REAL,
+  generation REAL, refusal_precision REAL, refusal_recall REAL, judge_agreement REAL, cost_usd REAL);
+CREATE TABLE IF NOT EXISTS eval_results (
+  run_id INTEGER NOT NULL, case_no INTEGER NOT NULL, stage TEXT, ok INTEGER NOT NULL,
+  reasons TEXT, shown TEXT, PRIMARY KEY (run_id, case_no));

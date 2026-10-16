@@ -27,6 +27,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk'
 import { retrieve, type AskLaw } from './law-retrieval'
+import { carryingUsage, usageOf, type Usage } from './usage'
 
 /** One topic the states can be compared on, as `/ask-laws/topics.json` lists it. */
 export interface NationwideTopic {
@@ -86,6 +87,8 @@ export function topicPath(id: string): string {
 export interface TopicChoice {
   topics: string[]
   family?: string
+  /** What the chooser's call spent (usage.ts), counted into the question's tokens. */
+  usage?: Usage
 }
 
 /** The topics for a question, best first; empty when no topic fits. A bare list is a choice that names no family. */
@@ -100,7 +103,7 @@ Return the ids of the topics whose laws answer the learner's question, best firs
 Some topics belong to a family, listed below with what it covers. A question about a family as a whole -- "strictest drunk driving laws", "DUI penalties", "which state is hardest on drunk driving" -- names the family in "family" and returns up to four of its topics, the ones that answer it best first; any other question leaves "family" empty.
 "Strictest drunk driving laws" is the dui family, led by the blood alcohol limits; "where can you turn left on red" is the left-on-red topic alone.
 A topic answers only what its own question asks: "how old must a child be to ride in the front seat" is not the car-seat topic, which says when a child needs a car seat and not where one may sit.
-A question that compares the states on what a topic's question asks is that topic, in whatever words: "which state has the slowest school zone speed limit" is speed-school-zone, "which states make you wait until 16 for a learner's permit" is permit-age, "which states do not require adults in the back seat to wear a seat belt" is seat-belts, and the same questions in Spanish are the same topics. A comparison on a family's subject -- "which state has the harshest first-offense DUI penalties" -- still names the family and returns its topics. The comparison is made afterwards from every state's law; the topic only has to hold the figure or rule being compared.
+A question that compares the states on what a topic's question asks is that topic, in whatever words: "which state has the slowest school zone speed limit" is speed-school-zone, "which states make you wait until 16 for a learner's permit" is permit-age, "which states do not require adults in the back seat to wear a seat belt" is seat-belts, and the same questions in Spanish are the same topics. A question about one figure or condition inside a topic's subject is that topic too, though the topic's question names the subject and not the figure: "how much must you slow down passing a stopped emergency vehicle" is move-over, "how long after sunset must your headlights be on" and "which states make you turn on your headlights when your wipers are on" are headlights-when, "how far away must oncoming drivers see you before a U-turn" is u-turn, "which state lets you park farthest from the curb" is park-curb. A Spanish question uses its own words for the subject, and they are the same topic: "acera" or "bordillo" is the curb, "limpiaparabrisas" the wipers, "vehículo de emergencia detenido" the stopped emergency vehicle. A comparison on a family's subject -- "which state has the harshest first-offense DUI penalties" -- still names the family and returns its topics. The comparison is made afterwards from every state's law; the topic only has to hold the figure or rule being compared.
 Return no ids if no topic's laws would answer it: a question about anything else, or about road law no topic covers. A question no topic answers is searched for in every state's own laws instead, so a topic that only brushes it is worse than none.`
 
 const SCHEMA = {
@@ -130,11 +133,21 @@ export function haikuTopicsFor(apiKey: string | undefined, client?: TopicsClient
       .filter((block) => block.type === 'text')
       .map((block) => (block as Anthropic.TextBlock).text)
       .join('')
-    const { topics: chosen, family } = JSON.parse(text) as { topics?: unknown; family?: unknown }
-    if (!Array.isArray(chosen) || chosen.some((id) => typeof id !== 'string')) {
-      throw new Error(`the topic chooser answered with no topics: ${text}`)
+    let read: { topics?: unknown; family?: unknown }
+    try {
+      read = JSON.parse(text) as { topics?: unknown; family?: unknown }
+      if (!Array.isArray(read.topics) || read.topics.some((id) => typeof id !== 'string')) {
+        throw new Error(`the topic chooser answered with no topics: ${text}`)
+      }
+    } catch (error) {
+      throw carryingUsage(error, response)
     }
-    return { topics: chosen as string[], ...(typeof family === 'string' && family.length > 0 ? { family } : {}) }
+    const { topics: chosen, family } = read
+    return {
+      topics: chosen as string[],
+      ...(typeof family === 'string' && family.length > 0 ? { family } : {}),
+      usage: usageOf(response),
+    }
   }
 }
 

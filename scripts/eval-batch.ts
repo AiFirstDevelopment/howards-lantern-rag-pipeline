@@ -10,7 +10,8 @@
  * endpoint answer null for everyone.
  *
  * Why: the whole eval is 130 live Opus calls, about ten dollars, and on
- * 2026-10-10 it was run five times in a day. A batch is the same request (`learnerRequestFor`, the worker's
+ * 2026-10-10 it was run five times in a day between a session and two
+ * builders. A batch is the same request (`learnerRequestFor`, the worker's
  * own) and the same reading of the answer (`learnerReplyFrom`), billed at
  * half, with the cases no longer waiting on one another.
  */
@@ -31,6 +32,9 @@ export class BatchedAsks {
   private readonly whenSettled: (() => void)[] = []
   private running = 0
   private settled = 0
+  /** Cases resumed with a result and not yet parked again or finished. */
+  private resumed = 0
+  private readonly whenQuiet: (() => void)[] = []
 
   constructor(
     private readonly client: BatchClient,
@@ -56,15 +60,50 @@ export class BatchedAsks {
       this.waiting.shift()?.()
       for (const wake of this.whenSettled.splice(0)) wake()
     }
+    // Between a result and the case's next park or its end: what `rounds`
+    // waits on before it sends the asks the results led to.
+    let live = false
+    const rest = () => {
+      if (!live) return
+      live = false
+      this.resumed -= 1
+      if (this.resumed === 0) for (const wake of this.whenQuiet.splice(0)) wake()
+    }
     const ask = (request: LearnerAskRequest) =>
       new Promise<LearnerReply>((resolve) => {
-        this.parked.push({ id, request, resolve })
+        rest()
+        this.parked.push({
+          id,
+          request,
+          resolve: (reply) => {
+            live = true
+            this.resumed += 1
+            resolve(reply)
+          },
+        })
         release()
       })
     try {
       return await work(ask)
     } finally {
       release()
+      rest()
+    }
+  }
+
+  /**
+   * Sends every parked request, and then, round after round, the requests the
+   * cases park on reading their results, until a round leaves none parked.
+   * The box asks a too-long answer once more, shorter (`answerLearner`), and
+   * that second ask parks after the first batch has gone: with one `submit`
+   * it would wait for a batch that is never sent, and the eval would hang.
+   */
+  async rounds(): Promise<{ id: string; sent: number; succeeded: number }[]> {
+    const sent: { id: string; sent: number; succeeded: number }[] = []
+    for (;;) {
+      sent.push(await this.submit())
+      while (this.resumed > 0) await new Promise<void>((resolve) => this.whenQuiet.push(resolve))
+      if (this.parked.length === 0) return sent
     }
   }
 

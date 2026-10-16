@@ -24,7 +24,7 @@ import { lawsBySectionFromCorpus, penaltiesFromFiles, processRowsFromFiles } fro
 import { publishedLawsOf } from '../../scripts/statutes/laws'
 import { sentencesIn } from '../../scripts/answer-register'
 import type { AskLaw } from '../../worker/src/law-retrieval'
-import type { LearnerAskRequest, LearnerReply } from '../../worker/src/learner-ask'
+import { learnerRequestFor, withLaws, type LearnerAskRequest, type LearnerReply } from '../../worker/src/learner-ask'
 
 /**
  * The state chips (docs/plans/what-happens-if.md, phase 4): twelve questions a
@@ -290,15 +290,118 @@ describe('npm run chips:build -- --states MD, the model scripted', () => {
   })
 
   // AC21: run again with nothing changed it writes nothing. The refused
-  // chips are asked again -- they are missing -- and the kept one is not.
+  // chips are asked again -- they are missing -- and the kept one is not;
+  // the phone answer, refused for its length alone, is asked once more to
+  // say it shorter, which the scripted model does not.
   it('keeps the stored answer and writes nothing when run again with nothing changed', async () => {
     const before = readFileSync(path.join(out, 'resource/state-chips/MD.json'), 'utf8')
     const asked = model.asked()
     const again = await buildStateChips(options)
     expect(again.asked).toBe(pool.length * 2 - 1)
-    expect(model.asked() - asked).toBe(pool.length * 2 - 1)
+    expect(model.asked() - asked).toBe(pool.length * 2 - 1 + 1)
     expect(again.written).toEqual([])
     expect(readFileSync(path.join(out, 'resource/state-chips/MD.json'), 'utf8')).toBe(before)
     expect(lines).toContain('nothing written: no stored answer changed')
+  })
+})
+
+/**
+ * Recovering the answers refused for length alone (the first build of all 51
+ * states lost 149 of 1,224 to a sentence too many or too long, 60 of them
+ * the insurance answer's three minimums in three sentences). The model is
+ * told the limit as a number, and an answer refused for its length and
+ * nothing else is asked once more with its draft. The checks are not
+ * loosened: the second answer is held to every one of them.
+ */
+describe('npm run chips:build, an answer refused for its length alone', () => {
+  const asked: LearnerAskRequest[] = []
+  const batch = (): StateBatch => ({
+    run: (_id, work) =>
+      work(async (request) => {
+        asked.push(request)
+        return reply(request)
+      }),
+    whenParked: async () => {},
+    submit: async () => ({ id: 'msgbatch_stub', sent: 0, succeeded: 0 }),
+  })
+  // Phone at a red light: three sentences, then two once shown its draft;
+  // friends in the car, three sentences and a law named in them, a fault of
+  // what it says as well as its length. Texting: a figure no row states, which no
+  // rewording of the same claim can ground. The rest: nothing said.
+  function reply(request: LearnerAskRequest): LearnerReply {
+    const first = request.laws?.[0]
+    if (request.question === 'Can I use my phone at a red light?' && first !== undefined) {
+      const answer = request.brief?.includes('No. Put it down. Wait for green.') === true ? 'No. Put it down.' : 'No. Put it down. Wait for green.'
+      return { kind: 'reply', scope: 'road-law', answer, sources: [first.id], model: 'claude-opus-5-5' }
+    }
+    if (request.question === 'How many friends can I have in the car when I first get my license?' && first !== undefined) {
+      return { kind: 'reply', scope: 'road-law', answer: 'Ask first. The Code limits it. Check with your parents.', sources: [first.id], model: 'claude-opus-5-5' }
+    }
+    if (request.question === 'What happens if I get caught texting while driving?' && first !== undefined) {
+      return { kind: 'reply', scope: 'road-law', answer: 'It is a $9,999 fine.', sources: [first.id], model: 'claude-opus-5-5' }
+    }
+    return { kind: 'reply', scope: 'road-law', answer: '', sources: [], model: 'claude-opus-5-5' }
+  }
+  const out = mkdtempSync(path.join(tmpdir(), 'state-chips-shorter-'))
+  const lines: string[] = []
+  const built = buildStateChips({
+    root: ROOT,
+    out,
+    codes: ['MD'],
+    today: '2026-10-14',
+    batch,
+    log: (line: string) => lines.push(line),
+    pipeline: {
+      lawsFor: async (code: string) => publishedLawsOf(ROOT, code),
+      lawsBySection: lawsBySectionFromCorpus(ROOT),
+      penaltiesFor: penaltiesFromFiles(ROOT),
+      processRowsFor: processRowsFromFiles(ROOT),
+      contact: 'support@example.test',
+    },
+  })
+  const askedFor = (question: string) => asked.filter((request) => request.question === question)
+
+  it('tells the model each chip’s own sentence limit as a number, after the laws, in the chip’s language', async () => {
+    await built
+    const phone = pool.find((chip) => chip.id === 'phone-red-light')!
+    const rule = askedFor(phone.question.en)[0]
+    expect(rule.brief).toContain(`at most ${STATE_CHIP_SENTENCES} sentences, each of at most 20 words`)
+    const texting = askedFor('What happens if I get caught texting while driving?')[0]
+    expect(texting.brief).toContain(`at most ${STATE_CHIP_CONSEQUENCE_SENTENCES} sentences, each of at most 20 words`)
+    const spanish = askedFor(phone.question.es)[0]
+    expect(spanish.brief).toContain(`como máximo ${STATE_CHIP_SENTENCES} oraciones`)
+    const message = learnerRequestFor(rule).messages.at(-1)!.content
+    expect(message).toBe(`${withLaws(rule.question, rule.laws)}\n\n${rule.brief}`)
+  })
+
+  it('leaves the box’s own request as it was, with no line after the laws', () => {
+    const request: LearnerAskRequest = { lang: 'en', question: 'How far from a hydrant?', history: [], laws: [] }
+    expect(learnerRequestFor(request).messages.at(-1)!.content).toBe(withLaws(request.question, request.laws))
+  })
+
+  it('asks a chip refused for its length once more with its draft, and stores the shorter answer only because it passes every check', async () => {
+    const result = await built
+    const phone = askedFor('Can I use my phone at a red light?')
+    expect(phone).toHaveLength(2)
+    expect(phone[1].brief).toContain('"No. Put it down. Wait for green."')
+    expect(phone[1].brief).toContain(`3 sentences, at most ${STATE_CHIP_SENTENCES}`)
+    const stored = readStoredStateChips(out, 'MD')
+    const answer = stored.find((each) => each.id === 'phone-red-light' && each.lang === 'en')
+    expect(answer?.answer).toBe('No. Put it down.')
+    expect(checkStoredStateChip(answer!, pool.find((chip) => chip.id === 'phone-red-light'), 'MD', MD_ROWS)).toEqual([])
+    expect(result.refused.some((each) => each.id === 'phone-red-light' && each.lang === 'en')).toBe(false)
+    expect(result.retry).not.toBeNull()
+  })
+
+  it('never asks again a chip refused for a figure its sources do not hold, since saying it shorter cannot ground it', async () => {
+    await built
+    expect(askedFor('What happens if I get caught texting while driving?')).toHaveLength(1)
+    expect(lines).toContain('REFUSED MD caught-texting (en): the live checker refused it: road-law:ungrounded (wrote: It is a $9,999 fine.)')
+  })
+
+  it('never asks again an answer that is too long and also names a law, since its length is not its only fault', async () => {
+    await built
+    expect(askedFor('How many friends can I have in the car when I first get my license?')).toHaveLength(1)
+    expect(lines).toContain(`REFUSED MD friends-in-car (en): 3 sentences, at most ${STATE_CHIP_SENTENCES}; names a law or a page in the sentences (wrote: Ask first. The Code limits it. Check with your parents.)`)
   })
 })

@@ -49,6 +49,12 @@ export interface AskAnswer {
   /** A refusal -- the challenge, the turn cap, the length cap. */
   error?: string
   /**
+   * The learner's box: the worker's row for this turn, so the browser that
+   * asked can rate the answer (`POST /api/ask/rate`). Absent on a chip's
+   * stored answer and on the partner boxes, which are not rated.
+   */
+  questionId?: number
+  /**
    * The learner's box, on a question paid for with a code: what the code has
    * left after it (docs/plans/trusted-by-date.md, decision 24).
    */
@@ -137,6 +143,9 @@ export interface AskLabels {
   /** The control under the newest exchange that shows the `count` earlier ones, and the one that hides them again. */
   showEarlier?: (count: number) => string
   showLess?: string
+  /** The two rating buttons under a shown answer, read aloud; only the learner's page draws them. */
+  rateUp?: string
+  rateDown?: string
 }
 
 /**
@@ -154,6 +163,8 @@ export interface AskThreadEntry {
   askedAt: string
   /** The conversation it was asked in, which is what the worker reads the earlier turns back by. */
   conversation?: string
+  /** The learner's thumbs on the answer, kept so a reload shows the choice already made. */
+  rating?: 1 | -1
 }
 
 /** Kept in step with MAX_QUESTION_CHARS in worker/src/ask.ts, which enforces it. */

@@ -797,6 +797,8 @@ const en = {
       deleteQuestion: 'Delete this question',
       showEarlier: (count: number) => `Show ${count} more`,
       showLess: 'Show less',
+      rateUp: 'This answer helped',
+      rateDown: 'This answer was wrong or did not help',
     },
     /**
      * Under the box on a comparison page's arrival, the list's offer
@@ -1686,6 +1688,8 @@ const es: Strings = {
       deleteQuestion: 'Borrar esta pregunta',
       showEarlier: (count: number) => `Ver ${count} más`,
       showLess: 'Ver menos',
+      rateUp: 'Esta respuesta me ayudó',
+      rateDown: 'Esta respuesta estaba mal o no me ayudó',
     },
     subscribeOffer: 'Cada mes: lo que cambió en las leyes de tránsito estatales.',
     subscribeLink: 'Recíbelo por correo (en inglés)',

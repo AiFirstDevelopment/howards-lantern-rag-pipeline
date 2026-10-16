@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { isCreditError, onlyWithIndex, unjudged, verdictOf, withVerdict } from '../../scripts/statutes/judge'
+import { BATCH_FILE, batchId, fromBatchId, isCreditError, judgeParams, onlyWithIndex, parseArgs, unjudged, verdictOf, withVerdict } from '../../scripts/statutes/judge'
 import { COVERAGE_FILE, readCoverage, topicsOf, type Coverage } from '../../scripts/statutes/laws'
 import type { AskLaw } from '../../worker/src/law-retrieval'
 
@@ -53,6 +53,33 @@ describe('the judge writing coverage.json', () => {
     expect(verdictOf({ law: 'AK-C-28.35.290-b-1', reason: '' }, offline, liveOnly)).toEqual({ from: 'code', law: 'AK-C-28.35.290-b-1' })
     expect(verdictOf({ law: 'AK-101', reason: '' }, offline, liveOnly)).toEqual({ from: 'manual', law: 'AK-101' })
     expect(verdictOf({ law: 'none', reason: 'no law states a fine' }, offline, liveOnly)).toEqual({ from: 'none', reason: 'no law states a fine' })
+  })
+
+  // A custom_id the API refuses fails the whole batch at create time; one that
+  // does not split back names the wrong state's verdict when the answers return.
+  it('names each batched judgment by an id the batch API accepts and that reads back as its state and topic', () => {
+    for (const code of ['DC', 'MD', 'WY']) {
+      for (const topic of ORDER) {
+        const id = batchId(code, topic)
+        expect(id, id).toMatch(/^[a-zA-Z0-9_-]{1,64}$/)
+        expect(fromBatchId(id)).toEqual({ code, topic })
+      }
+    }
+  })
+
+  // Half the price is the point of --batch; a batch asking a different model
+  // or effort would be a cheaper verdict nobody decided on.
+  it('sends a batched judgment the same request a single one is, and reads --batch apart from the topics', () => {
+    const params = judgeParams('State: Maryland', ['MD-101'])
+    expect(params.model).toBe('claude-sonnet-5-5')
+    expect(params.output_config?.effort).toBe('medium')
+    expect(parseArgs(['MD', '--topic', 'window-tint', '--batch'], ['MD'])).toEqual({ states: ['MD'], topics: ['window-tint'], batch: true })
+    expect(parseArgs(['MD', '--topic', 'window-tint'], ['MD'])?.batch).toBe(false)
+  })
+
+  // The record of a batch in flight is local state, never a file to commit.
+  it('keeps the batch record out of git', () => {
+    expect(readFileSync(path.join(ROOT, '.gitignore'), 'utf8').split('\n')).toContain(BATCH_FILE)
   })
 
   it('stops on the API’s credit error rather than retrying it', () => {

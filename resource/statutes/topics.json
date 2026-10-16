@@ -41,5 +41,10 @@
   {"id": "dui-high-bac", "question": "At what blood alcohol level do drunk-driving penalties increase?", "title": "High blood alcohol DUI penalties", "family": "dui"},
   {"id": "dui-lookback", "question": "For how many years does a prior drunk-driving conviction count against you?", "title": "How long a prior DUI counts", "family": "dui"},
   {"id": "points-suspension", "question": "How many points on your license lead to a suspension?", "title": "Points that lead to a license suspension"},
-  {"id": "texting-fine", "question": "What is the fine for texting while driving?", "title": "Fine for texting while driving"}
+  {"id": "texting-fine", "question": "What is the fine for texting while driving?", "title": "Fine for texting while driving"},
+  {"id": "motorcycle-helmet", "question": "Who must wear a protective helmet while operating or riding a motorcycle?", "title": "Motorcycle helmet law"},
+  {"id": "window-tint", "question": "How much light must a tinted side or rear window let through?", "title": "Window tint limit"},
+  {"id": "bike-passing", "question": "How much distance must you leave when passing a bicycle?", "title": "Passing distance for a bicycle"},
+  {"id": "keep-right", "question": "Must a vehicle driving slower than other traffic keep to the right lane?", "title": "Slower traffic keep right"},
+  {"id": "insurance-minimum", "question": "What is the minimum liability insurance coverage for bodily injury or death of one person and property damage?", "title": "Minimum car insurance liability limits"}
 ]

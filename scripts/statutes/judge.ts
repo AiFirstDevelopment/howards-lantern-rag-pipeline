@@ -6,6 +6,7 @@
  *   npm run statutes:judge -- MD --topic dui-first-fine
  *   npm run statutes:judge -- all --topic dui-first-fine dui-first-jail
  *   npm run statutes:judge -- all            (every topic without a verdict)
+ *   npm run statutes:judge -- all --topic window-tint --batch
  *
  * For each state and topic with no verdict, Sonnet is shown two pools: the 24
  * laws `retrieve` returns for the topic's question alone -- the pool
@@ -26,8 +27,13 @@
  * hand, by /add-code, or by an earlier run -- is skipped before any model or
  * index is asked, and said so. A credit error stops the run without a retry:
  * every further call would fail the same way and cost a request each.
+ *
+ * `--batch` sends every judgment of the run as one Message Batch, at half the
+ * price, and writes the verdicts when it ends. The pools are built first and
+ * recorded in BATCH_FILE with the batch's id, so a run killed while it waits
+ * resumes the same batch rather than paying for it twice.
  */
-import { writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Anthropic from '@anthropic-ai/sdk'
@@ -41,6 +47,9 @@ export const JUDGE_MODEL = 'claude-sonnet-5-5'
 
 /** Medium, not high: picking one law of 24 that states a figure is reading, not reasoning, and the effort is most of the bill. */
 export const JUDGE_EFFORT = 'medium'
+
+/** Where a batch run records what it sent, until its verdicts are written; gitignored. */
+export const BATCH_FILE = '.judge-batch.json'
 
 /** The verdict's `from` for a law id, by the same reading the coverage test applies. */
 export function kindOf(id: string): Exclude<Verdict['from'], 'none'> {
@@ -120,7 +129,7 @@ export function judgePrompt(stateName: string, topic: Topic, offline: AskLaw[], 
 }
 
 /** The judge's answer as a verdict: an id of pool A is a verdict, one of pool B or anything else is `none`. */
-export function verdictOf(judgment: Judgment, offline: readonly AskLaw[], liveOnly: readonly AskLaw[]): Verdict {
+export function verdictOf(judgment: Judgment, offline: readonly { id: string }[], liveOnly: readonly { id: string }[]): Verdict {
   if (offline.some((law) => law.id === judgment.law)) return { from: kindOf(judgment.law), law: judgment.law }
   if (liveOnly.some((law) => law.id === judgment.law)) return { from: 'none', reason: onlyWithIndex(judgment.law) }
   const reason = judgment.reason.trim()
@@ -138,8 +147,9 @@ interface Usage {
   calls: number
 }
 
-async function judge(client: Anthropic, prompt: string, ids: string[], usage: Usage): Promise<Judgment> {
-  const response = await client.messages.create({
+/** One judgment's request, the same whether it is sent alone or in a batch. */
+export function judgeParams(prompt: string, ids: string[]): Anthropic.MessageCreateParamsNonStreaming {
+  return {
     model: JUDGE_MODEL,
     max_tokens: 8000,
     system: RULES,
@@ -156,11 +166,14 @@ async function judge(client: Anthropic, prompt: string, ids: string[], usage: Us
       },
     },
     messages: [{ role: 'user', content: prompt }],
-  })
-  usage.input += response.usage.input_tokens
-  usage.output += response.usage.output_tokens
+  }
+}
+
+function judgmentOf(message: Anthropic.Message, usage: Usage): Judgment {
+  usage.input += message.usage.input_tokens
+  usage.output += message.usage.output_tokens
   usage.calls += 1
-  const text = response.content
+  const text = message.content
     .filter((block) => block.type === 'text')
     .map((block) => (block as Anthropic.TextBlock).text)
     .join('')
@@ -169,19 +182,44 @@ async function judge(client: Anthropic, prompt: string, ids: string[], usage: Us
   return { law: parsed.law, reason: parsed.reason }
 }
 
-export function parseArgs(args: string[], known: readonly string[]): { states: string[]; topics: string[] | null } | null {
+async function judge(client: Anthropic, prompt: string, ids: string[], usage: Usage): Promise<Judgment> {
+  return judgmentOf(await client.messages.create(judgeParams(prompt, ids)), usage)
+}
+
+/** A batch request's custom_id for a state and topic, and back: the API allows letters, digits, `_` and `-`. */
+export function batchId(code: string, topic: string): string {
+  return `${code}__${topic}`
+}
+
+export function fromBatchId(id: string): { code: string; topic: string } {
+  const [code, topic] = id.split('__')
+  return { code, topic }
+}
+
+/** What a batch run sent: the pools' ids are all a verdict needs once the answer is back. */
+export interface PendingBatch {
+  id: string
+  pools: Record<string, { offline: string[]; liveOnly: string[] }>
+}
+
+export function parseArgs(args: string[], known: readonly string[]): { states: string[]; topics: string[] | null; batch: boolean } | null {
   const states: string[] = []
   const topics: string[] = []
   let inTopics = false
+  let batch = false
   for (const arg of args) {
     if (arg === '--topic') inTopics = true
+    else if (arg === '--batch') {
+      batch = true
+      inTopics = false
+    }
     else if (arg.startsWith('--')) inTopics = false
     else if (inTopics) topics.push(arg)
     else if (arg === 'all') states.push(...known)
     else if (/^[A-Z]{2}$/.test(arg)) states.push(arg)
     else return null
   }
-  return states.length === 0 ? null : { states: [...new Set(states)], topics: topics.length === 0 ? null : topics }
+  return states.length === 0 ? null : { states: [...new Set(states)], topics: topics.length === 0 ? null : topics, batch }
 }
 
 async function main(): Promise<number> {
@@ -189,7 +227,7 @@ async function main(): Promise<number> {
   const known = statesOf(root)
   const args = parseArgs(process.argv.slice(2), known)
   if (args === null) {
-    console.error('usage: npm run statutes:judge -- XX|all [--topic <id>...]')
+    console.error('usage: npm run statutes:judge -- XX|all [--topic <id>...] [--batch]')
     return 2
   }
   const topics = topicsOf(root)
@@ -242,7 +280,15 @@ async function main(): Promise<number> {
   const worded = new Map<string, Promise<string[]>>()
   const client = new Anthropic({ apiKey, maxRetries: 2 })
   const usage: Usage = { input: 0, output: 0, calls: 0 }
+  const pendingFile = path.join(root, BATCH_FILE)
+  if (args.batch && existsSync(pendingFile)) {
+    const pending = JSON.parse(readFileSync(pendingFile, 'utf8')) as PendingBatch
+    console.log(`resuming batch ${pending.id} from ${BATCH_FILE}: nothing new is sent`)
+    return finishBatch(root, client, pending, order, usage)
+  }
   const laws = new Map<string, AskLaw[]>()
+  const requests: Anthropic.Messages.BatchCreateParams.Request[] = []
+  const pools: PendingBatch['pools'] = {}
   let done = 0
   for (const { code, topic: id } of todo) {
     const topic = topics.find((each) => each.id === id)!
@@ -255,6 +301,12 @@ async function main(): Promise<number> {
     const live = retrieve(stateLaws, topic.question, poolSize(searches), nearIds, searches)
     const inOffline = new Set(offline.map((law) => law.id))
     const liveOnly = live.filter((law) => !inOffline.has(law.id))
+    if (args.batch) {
+      const prompt = judgePrompt(STATE_NAMES[code] ?? code, topic, offline, liveOnly)
+      requests.push({ custom_id: batchId(code, id), params: judgeParams(prompt, [...offline, ...liveOnly].map((law) => law.id)) })
+      pools[batchId(code, id)] = { offline: offline.map((law) => law.id), liveOnly: liveOnly.map((law) => law.id) }
+      continue
+    }
     let judgment: Judgment
     try {
       judgment = await judge(client, judgePrompt(STATE_NAMES[code] ?? code, topic, offline, liveOnly), [...offline, ...liveOnly].map((law) => law.id), usage)
@@ -276,12 +328,63 @@ async function main(): Promise<number> {
     done += 1
     console.log(`${code} ${id}: ${verdict.from}${verdict.law === undefined ? '' : ` ${verdict.law}`} -- ${verdict.reason ?? judgment.reason}`)
   }
+  if (args.batch) {
+    let created: Anthropic.Messages.MessageBatch
+    try {
+      created = await client.messages.batches.create({ requests })
+    } catch (error) {
+      if (isCreditError(error)) {
+        console.error('\ncredit balance is too low: the batch was not sent, nothing judged')
+        return 3
+      }
+      throw error
+    }
+    const pending: PendingBatch = { id: created.id, pools }
+    writeFileSync(pendingFile, `${JSON.stringify(pending)}\n`)
+    console.log(`sent batch ${created.id}: ${requests.length} judgments, recorded in ${BATCH_FILE}`)
+    return finishBatch(root, client, pending, order, usage)
+  }
   report(usage)
   return 0
 }
 
-function report(usage: Usage): void {
-  console.log(`\n${usage.calls} judgments, ${usage.input} input tokens, ${usage.output} output tokens`)
+/**
+ * Waits for a batch to end and writes each verdict it brought back, never
+ * over one already written. A request that errored or expired is named and
+ * left unjudged, so the next run asks it again; the record is removed only
+ * once every answer that came back is written.
+ */
+async function finishBatch(root: string, client: Anthropic, pending: PendingBatch, order: readonly string[], usage: Usage): Promise<number> {
+  for (;;) {
+    const batch = await client.messages.batches.retrieve(pending.id)
+    if (batch.processing_status === 'ended') break
+    console.log(`batch ${pending.id}: ${batch.request_counts.processing} still processing`)
+    await new Promise((resolve) => setTimeout(resolve, 30_000))
+  }
+  const failed: string[] = []
+  let credit = false
+  for await (const result of await client.messages.batches.results(pending.id)) {
+    const { code, topic } = fromBatchId(result.custom_id)
+    const pool = pending.pools[result.custom_id]
+    if (result.result.type !== 'succeeded' || pool === undefined) {
+      if (result.result.type === 'errored' && isCreditError(JSON.stringify(result.result.error))) credit = true
+      failed.push(`${code} ${topic} (${result.result.type})`)
+      continue
+    }
+    const judgment = judgmentOf(result.result.message, usage)
+    const verdict = verdictOf(judgment, pool.offline.map((id) => ({ id })), pool.liveOnly.map((id) => ({ id })))
+    const written = writeVerdict(root, code, topic, verdict, order)
+    console.log(`${code} ${topic}: ${written ? '' : 'already judged, not written: '}${verdict.from}${verdict.law === undefined ? '' : ` ${verdict.law}`} -- ${verdict.reason ?? judgment.reason}`)
+  }
+  rmSync(path.join(root, BATCH_FILE), { force: true })
+  if (failed.length > 0) console.error(`\nnot judged, ask again: ${failed.join(', ')}`)
+  if (credit) console.error('credit balance is too low')
+  report(usage, true)
+  return failed.length > 0 ? 3 : 0
+}
+
+function report(usage: Usage, batch = false): void {
+  console.log(`\n${usage.calls} judgments, ${usage.input} input tokens, ${usage.output} output tokens${batch ? ', billed at the batch rate (half)' : ''}`)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

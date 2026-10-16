@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { askLearners, claimQuestions, fetchQuestionBalance, fetchQuestionHistory, startQuestionsCheckout } from '../api'
+import { askLearners, claimQuestions, rateAnswer, fetchQuestionBalance, fetchQuestionHistory, startQuestionsCheckout } from '../api'
 import { fromHistory, rebuildable, withoutDeleted, type Deleted } from '../ask-thread'
 import type { AskThreadEntry } from '../ask'
-import { record } from '../analytics'
+import { analyticsId, record } from '../analytics'
 import { CHIPS_PATH, CHIPS_TAPPED_KEY, chipAnswer, drawChips, loadChips, recordChipTap, refillChips, stateChipsPath, stateChipsTappedKey, tappedChips, type StoredChip } from '../chips'
 import { ASK_WEEKLY_LIMITS, asksLeft, daysUntilReset, recordAsk, type AskKind } from '../ask-quota'
 import type { StateOption } from '../data/laws'
@@ -235,6 +235,9 @@ export default function Ask({ onBack, stateCode, states, onChooseState, focusInp
             // On every question, free ones too: the row is kept under the
             // code, so the code's other devices can read it back.
             ...(tokens.code !== null ? { code: tokens.code } : {}),
+            // The same id every event carries, so the Asked tile counts
+            // learners rather than questions and opens onto who asked what.
+            session: analyticsId(),
           })
           if (answer?.tokens !== undefined) tokens.setLeft(answer.tokens.left)
           // The code could not pay after all -- another device on the same
@@ -268,6 +271,7 @@ export default function Ask({ onBack, stateCode, states, onChooseState, focusInp
         stateNameOf={(code) => states.find((option) => option.code === code)?.name ?? null}
         history={history}
         onHistory={saveAskThread}
+        rate={rateAnswer}
         incoming={incoming}
         onDelete={(gone) =>
           setDeleted((before) => {

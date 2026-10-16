@@ -31,10 +31,21 @@ const ACCOUNT = 'bc0d77b66c22a79eff22a725d8c7bb49'
  */
 export const REST_ATTEMPTS = 6
 
-export function caller(): (route: string, body: unknown) => Promise<unknown> {
-  const auth =
+/**
+ * Wrangler's OAuth token lasts about an hour, and `wrangler auth token`
+ * refreshes it when asked. Read once at the start, it expired under a long
+ * eval on 2026-10-15 and every later case failed "401 Authentication error
+ * after 6 attempts", so a 401 asks for the token again before the next try.
+ */
+function currentToken(): string {
+  return (
     process.env.CLOUDFLARE_API_TOKEN ??
     execFileSync('npx', ['wrangler', 'auth', 'token'], { encoding: 'utf8' }).trim().split('\n').pop()!.trim()
+  )
+}
+
+export function caller(token: () => string = currentToken): (route: string, body: unknown) => Promise<unknown> {
+  let auth = token()
   return async (route, body) => {
     let last = 'no result'
     for (let attempt = 1; attempt <= REST_ATTEMPTS; attempt += 1) {
@@ -48,6 +59,10 @@ export function caller(): (route: string, body: unknown) => Promise<unknown> {
       const said = parsed?.errors?.map((error) => error.message).join('; ')
       last = `${response.status}${said ? ` ${said}` : ''}`
       if (attempt === REST_ATTEMPTS) break
+      if (response.status === 401) {
+        auth = token()
+        continue
+      }
       const retryAfter = Number(response.headers.get('retry-after'))
       const wait = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000 * 2 ** (attempt - 1)
       await new Promise((resolve) => setTimeout(resolve, wait))

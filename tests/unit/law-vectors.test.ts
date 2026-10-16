@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { batches, fingerprint, lawsOf, readManifest, statesOf } from '../../scripts/law-vectors'
+import { INDEX_WAIT_MS, awaitIndexed, batches, fingerprint, lawsOf, readManifest, statesOf } from '../../scripts/law-vectors'
 import { EMBEDDING_MODEL, LAWS_INDEX, embeddingText } from '../../worker/src/law-vectors'
 
 /**
@@ -67,5 +67,54 @@ describe('cutting the laws into embedding requests', () => {
       expect(batch.length * Math.max(...batch.map((each) => each.law.length))).toBeLessThanOrEqual(60_000)
     }
     expect(cut.flat().map((each) => each.id)).toEqual(laws.map((each) => each.id))
+  })
+})
+
+/**
+ * Vectorize accepts an upsert and applies it later. `laws:embed --push` ends
+ * with the state's retrieval eval (docs/plans/eval-lifecycle-build.md,
+ * decision 35), and an eval run on acceptance ranks against the previous
+ * vectors and writes that figure beside the new hash. So the push waits for
+ * the index to name its last mutation as processed, and gives up -- a null
+ * figure, with the reason -- rather than measure the wrong index.
+ */
+describe('waiting for the index to apply a push before its eval', () => {
+  const scripted = (answers: (string | null)[]) => {
+    let asked = 0
+    let clock = 0
+    return {
+      progress: async () => ({ processedUpToMutation: answers[Math.min(asked++, answers.length - 1)] }),
+      options: { intervalMs: 10_000, timeoutMs: 60_000, sleep: async (ms: number) => void (clock += ms), now: () => clock },
+      asked: () => asked,
+    }
+  }
+
+  it('returns once the index names the push’s last mutation as processed', async () => {
+    const index = scripted(['before', 'before', 'mine'])
+    expect(await awaitIndexed({ id: 'mine' }, index.progress, index.options)).toBeNull()
+    expect(index.asked()).toBe(3)
+  })
+
+  it('gives up after its bounded wait with the reason, rather than let the eval measure the previous vectors', async () => {
+    const index = scripted(['before'])
+    const why = await awaitIndexed({ id: 'mine' }, index.progress, index.options)
+    expect(why).toMatch(/^the index had not applied the push's last upsert \(mine\) after 1 minutes/)
+    expect(index.asked()).toBe(7)
+  })
+
+  it('records why rather than evaluating when the upsert named no mutation to wait for', async () => {
+    const index = scripted(['mine'])
+    expect(await awaitIndexed({ id: null }, index.progress, index.options)).toMatch(/no mutationId/)
+    expect(index.asked()).toBe(0)
+  })
+
+  it('waits for nothing when the push upserted nothing', async () => {
+    const index = scripted(['before'])
+    expect(await awaitIndexed(null, index.progress, index.options)).toBeNull()
+    expect(index.asked()).toBe(0)
+  })
+
+  it('waits ten minutes by default, longer than Vectorize usually takes and short of a push nobody watches', () => {
+    expect(INDEX_WAIT_MS).toBe(10 * 60_000)
   })
 })

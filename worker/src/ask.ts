@@ -80,8 +80,26 @@ export const ASK_MODEL = 'claude-opus-5'
 /** Long enough for a real question, short enough not to be a way to send prose. */
 export const MAX_QUESTION_CHARS = 500
 
-/** A conversation, not a correspondence. */
+/**
+ * The partner page's box ends a conversation here: it is free, nothing is
+ * debited for a turn, and the cap is what bounds what one conversation can
+ * cost (see `claimTurn` in partner-api.ts). The learner's box has no such
+ * end -- see `HISTORY_TURNS`.
+ */
 export const MAX_TURNS = 10
+
+/**
+ * How many earlier turns of a learner's conversation the model is shown.
+ *
+ * The learner's box used to end a conversation at `MAX_TURNS`, and that was
+ * a mistake (Joel, 2026-10-15): once the free questions are spent the next one
+ * is paid for, so a cap on turns was a cap on revenue from exactly the people
+ * willing to pay. What the cap was actually bounding -- the prompt growing
+ * with every turn -- is bounded here instead, as a sliding window over the
+ * thread: the conversation goes on for as long as the learner does, and the
+ * model sees the last ten exchanges of it.
+ */
+export const HISTORY_TURNS = 10
 
 /**
  * What the public route may cost in a day.

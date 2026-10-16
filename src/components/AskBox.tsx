@@ -185,6 +185,12 @@ export interface AskBoxProps {
   onEarlierShown?: (shown: boolean) => void
   /** Drawn above the input: on the learner's page, what is left to ask with. */
   balance?: ReactNode
+  /**
+   * Sends a thumbs up or down on an answer the worker numbered, on the
+   * learner's page (docs/plans/eval-lifecycle-build.md, decision 7); true when
+   * it was kept. Absent -- the partner pages -- no rating is offered.
+   */
+  rate?: (input: { conversation: string; questionId: number; rating: 1 | -1 }) => Promise<boolean>
 }
 
 /** Today's English, which the partner pages get by passing nothing. */
@@ -224,6 +230,8 @@ const ENGLISH: Required<AskLabels> = {
   deleteQuestion: 'Delete this question',
   showEarlier: (count) => `Show ${count} more`,
   showLess: 'Show less',
+  rateUp: 'This answer helped',
+  rateDown: 'This answer was wrong or did not help',
 }
 
 /**
@@ -259,6 +267,8 @@ interface Exchange {
   conversation?: string
   /** Kept from an earlier visit rather than asked in this one. */
   restored?: true
+  /** The learner's thumbs on the answer. */
+  rating?: 1 | -1
 }
 
 /**
@@ -304,6 +314,7 @@ export default function AskBox({
   earlierShown: earlierShownAtFirst = true,
   onEarlierShown,
   balance,
+  rate,
 }: AskBoxProps) {
   // One conversation per box. It is what the worker uses to read the earlier
   // turns back, which is what makes "what if I don't hit that?" resolvable.
@@ -321,10 +332,10 @@ export default function AskBox({
   keep.current = onHistory
   useEffect(() => {
     keep.current?.(
-      thread.flatMap(({ question, answer, chip, state, askedAt, conversation: asked }) =>
+      thread.flatMap(({ question, answer, chip, state, askedAt, conversation: asked, rating }) =>
         answer === null
           ? []
-          : [{ question, answer, ...(chip === undefined ? {} : { chip }), state: state ?? null, askedAt: askedAt ?? new Date().toISOString(), ...(asked === undefined ? {} : { conversation: asked }) }],
+          : [{ question, answer, ...(chip === undefined ? {} : { chip }), state: state ?? null, askedAt: askedAt ?? new Date().toISOString(), ...(asked === undefined ? {} : { conversation: asked }), ...(rating === undefined ? {} : { rating }) }],
       ),
     )
   }, [thread])
@@ -521,6 +532,32 @@ export default function AskBox({
                       }
                     />
                   )}
+                  {/* Only under an answer that was shown: a refusal carries a
+                      question id too, and thumbs under "I couldn't find that"
+                      would ask the learner to rate nothing. */}
+                  {rate !== undefined &&
+                    exchange.answer !== null &&
+                    exchange.answer.questionId !== undefined &&
+                    exchange.answer.answer !== undefined &&
+                    exchange.answer.answer !== '' && (
+                      <Rating
+                        rating={exchange.rating}
+                        labels={labels}
+                        onRate={(rating) => {
+                          const questionId = exchange.answer?.questionId
+                          if (questionId === undefined || exchange.rating === rating) return
+                          const before = exchange.rating
+                          setThread((now) => now.map((each, at) => (at === index ? { ...each, rating } : each)))
+                          // Put back if the worker did not keep it, so the mark
+                          // on screen is never a rating nobody holds -- unless a
+                          // later press has replaced it, which is the rating now.
+                          void rate({ conversation: exchange.conversation ?? conversation, questionId, rating }).then((kept) => {
+                            if (kept) return
+                            setThread((now) => now.map((each, at) => (at === index && each.rating === rating ? { ...each, rating: before } : each)))
+                          })
+                        }}
+                      />
+                    )}
                 </div>
               </div>
             </li>
@@ -969,6 +1006,34 @@ function Answer({
         missing.
       */}
       <Unavailable domains={answer.unavailable} />
+    </div>
+  )
+}
+
+/**
+ * The two thumbs under a shown answer (docs/plans/eval-lifecycle-build.md,
+ * decision 7). The pressed one is filled and `aria-pressed`, and stays so
+ * after a reload, because the choice is kept with the thread.
+ */
+function Rating({ rating, labels, onRate }: { rating?: 1 | -1; labels: AskLabels; onRate: (rating: 1 | -1) => void }) {
+  const button = (value: 1 | -1, testId: string, label: string, path: string) => (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-label={label}
+      aria-pressed={rating === value}
+      onClick={() => onRate(value)}
+      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${rating === value ? 'border-sky bg-sky text-paper' : 'border-line text-muted'}`}
+    >
+      <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+        <path d={path} />
+      </svg>
+    </button>
+  )
+  return (
+    <div className="mt-2 flex justify-end gap-2" data-testid="ask-rating">
+      {button(1, 'ask-rate-up', labels.rateUp ?? ENGLISH.rateUp, 'M2 9h3v9H2zM7 18h7.5a2 2 0 0 0 2-1.6l1.4-6A2 2 0 0 0 16 8h-4.5l.7-3.4A1.7 1.7 0 0 0 9.2 3L7 8z')}
+      {button(-1, 'ask-rate-down', labels.rateDown ?? ENGLISH.rateDown, 'M18 11h-3V2h3zM13 2H5.5a2 2 0 0 0-2 1.6l-1.4 6A2 2 0 0 0 4 12h4.5l-.7 3.4a1.7 1.7 0 0 0 3 1.6L13 12z')}
     </div>
   )
 }

@@ -45,8 +45,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { storeStatements } from '../../worker/src/law-nationwide'
-import { REPHRASE_MODEL } from '../../worker/src/law-rephrase'
-import { deleteStatements, fingerprint, localStore, readManifest, restStore, MANIFEST_FILE, type Store } from '../laws-store'
+import { HAIKU_MODEL } from '../../worker/src/law-rephrase'
+import { deleteStatements, fingerprint, localStore, readManifest, restStore, MANIFEST_FILE, type Store, type StoreManifest } from '../laws-store'
+import { withFigures } from '../push-eval'
 import { BROWSER_HEADERS, type PageReader } from '../penalties/fetch'
 import { decoded, pdfText } from '../statutes/fetch'
 import { publishedLawsOf as lawsOf } from '../statutes/laws'
@@ -74,7 +75,7 @@ export { verifiedPassages }
  * waiting period is reading, not writing, and the check below is what makes
  * its choice safe to store.
  */
-export const PASSAGE_MODEL = REPHRASE_MODEL
+export const PASSAGE_MODEL = HAIKU_MODEL
 
 /** At most this many characters of a page go to the model: a DMV page is mostly menu, and the rule is in the first part of what is left. */
 export const PAGE_CHARS = 60_000
@@ -119,6 +120,20 @@ export function haikuPicker(apiKey: string | undefined): Picker {
     if (!Array.isArray(passages) || passages.some((passage) => typeof passage !== 'string')) throw new Error(`the picker answered with no passages: ${said}`)
     return passages as string[]
   }
+}
+
+/**
+ * A state's manifest entry after its pages are pushed. Rewritten as
+ * `{laws, sha256}` alone, it dropped the retrieval figures `laws:store` and
+ * `laws:embed` record beside the hash (docs/plans/eval-lifecycle.md, stage 6):
+ * kept while the hash is the one they were measured on, null once it is not --
+ * never an old figure beside a new hash, which is the rule the pushes follow.
+ */
+export function storedEntry(previous: StoreManifest['states'][string] | undefined, laws: number, sha256: string): StoreManifest['states'][string] {
+  const entry = { laws, sha256 }
+  if (previous === undefined) return entry
+  if (previous.sha256 === sha256) return withFigures(entry, previous, 'skipped')
+  return 'evalRecall' in previous || 'evalMrr' in previous ? withFigures(entry, previous, { evalRecall: null, evalMrr: null }) : entry
 }
 
 const sha = (text: string) => createHash('sha256').update(text).digest('hex')
@@ -305,7 +320,7 @@ export async function run(
     const laws = lawsOf(root, code)
     const now = fingerprint(code, laws)
     if (manifest.states[code]?.sha256 === stored || manifest.states[code]?.sha256 === now) {
-      manifest.states[code] = { laws: laws.length, sha256: now }
+      manifest.states[code] = storedEntry(manifest.states[code], laws.length, now)
       writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n')
     } else {
       log(`${code}: the rest of the state is not stored as committed either; run npm run laws:store -- --push ${code}`)

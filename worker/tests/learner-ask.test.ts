@@ -1,6 +1,6 @@
-import { env } from 'cloudflare:test'
+import { SELF, env } from 'cloudflare:test'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { MAX_TURNS, NO_MATCH, QUESTION_RETENTION_SECONDS } from '../src/ask'
+import { HISTORY_TURNS, NO_MATCH, QUESTION_RETENTION_SECONDS } from '../src/ask'
 import { handleLearnersAsk, type LearnerDeps } from '../src/learner-api'
 import {
   GIVEN_LAWS, SECTION_CHARS,
@@ -16,6 +16,8 @@ import {
   type Scope,
 } from '../src/learner-ask'
 import type { AskLaw } from '../src/law-retrieval'
+import type { Rerank, Scores } from '../src/law-rerank'
+import type { Rephrase } from '../src/law-rephrase'
 import { lawsByIdFor, lawsBySectionFor, nearLawsNationwide, penaltiesForDb, penaltyStatements, processRowsForDb, storeStatements, type PenaltyRow } from '../src/law-nationwide'
 import type { ProcessFamily } from '../src/process-families'
 import type { StateLaw } from '../src/law-topics'
@@ -319,19 +321,38 @@ describe('the thread, the challenge and the cap', () => {
     expect(followUp.body.id).toBe('answer')
   })
 
-  it('ends a conversation at MAX_TURNS and refuses a question past the length cap without asking the model', async () => {
+  // A conversation used to end at ten questions, and the eleventh -- the one a
+  // learner out of free questions pays for -- was refused. The thread goes on;
+  // what is bounded is the prompt, which sees a window of the last ten turns.
+  it('answers the eleventh question of a conversation, and shows the model only the last ten turns', async () => {
     const scripted = model(says('Yes.', ['paying']))
     const injected = deps({ askLearner: scripted.ask })
-    for (let turn = 1; turn <= MAX_TURNS; turn += 1) {
-      await ask({ conversation: THREAD, question: `q${turn}`, turnstile: 'good-token' }, injected)
+    for (let turn = 1; turn <= HISTORY_TURNS + 1; turn += 1) {
+      const answered = await ask({ conversation: THREAD, question: `q${turn}`, turnstile: 'good-token' }, injected)
+      expect(answered.status, `turn ${turn}`).toBe(200)
+      expect(answered.body.id, `turn ${turn}`).toBe('answer')
     }
-    const eleventh = await ask({ conversation: THREAD, question: 'one more' }, injected)
-    expect(eleventh.status).toBe(400)
-    expect(eleventh.body.error).toContain(String(MAX_TURNS))
+    const twelfth = await ask({ conversation: THREAD, question: 'q12' }, injected)
+    expect(twelfth.status).toBe(200)
+    expect(twelfth.body.id).toBe('answer')
 
-    const long = await ask({ conversation: OTHER, question: 'x'.repeat(501), turnstile: 'good-token' }, injected)
+    // Turn 12 is shown turns 2 to 11: ten of them, the oldest dropped, and
+    // every one of them a turn the table holds, oldest first.
+    const shown = scripted.calls[HISTORY_TURNS + 1].history
+    expect(shown).toHaveLength(HISTORY_TURNS)
+    expect(shown.map((turn) => turn.question)).toEqual(
+      Array.from({ length: HISTORY_TURNS }, (_, index) => `q${index + 2}`),
+    )
+    // And the thread is numbered through, not from the window: the unique
+    // index on (conversation, turn) would refuse a twelfth turn numbered 11.
+    expect((await rows()).map((row) => row.turn)).toEqual(Array.from({ length: 12 }, (_, index) => index + 1))
+  })
+
+  it('refuses a question past the length cap without asking the model', async () => {
+    const scripted = model(says('Yes.', ['paying']))
+    const long = await ask({ conversation: OTHER, question: 'x'.repeat(501), turnstile: 'good-token' }, deps({ askLearner: scripted.ask }))
     expect(long.status).toBe(400)
-    expect(scripted.calls).toHaveLength(MAX_TURNS)
+    expect(scripted.calls).toHaveLength(0)
   })
 
   // Guard 6. A learner's question never lands in the partner table, never
@@ -587,6 +608,84 @@ describe('road law, from the chosen state’s laws only (docs/plans/learner-ask-
     )
     expect(following.body.answer).toBeUndefined()
     expect((await rows())[0].model).toBe('road-law:ungrounded')
+  })
+})
+
+/**
+ * A right answer that runs long (#799): the whole eval on #802's wording lost
+ * 9 of 190 right answers to a third sentence or one past 28 words, the
+ * learner reading a paragraph where two short sentences were asked for. The
+ * box asks such an answer once more, with its draft, and shows the shorter
+ * one only if it passes every check the first did; a first answer within the
+ * limits costs one ask, as it always has.
+ */
+describe('an answer over the sentence limits is asked once more, shorter', () => {
+  const LONG = 'You must park at least 15 feet from a fire hydrant. That is the rule. Check the curb.'
+
+  it('asks a three-sentence answer once more with its draft and the limit, and shows the shorter answer', async () => {
+    const scripted = model(says(LONG, ['MD-399'], 'road-law'), says('Park at least 15 feet from a fire hydrant.', ['MD-399'], 'road-law'))
+    const answered = await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: scripted.ask }))
+    expect(answered.body.answer).toBe('Park at least 15 feet from a fire hydrant.')
+    expect(scripted.calls).toHaveLength(2)
+    expect(scripted.calls[0].brief).toBeUndefined()
+    expect(scripted.calls[1].brief).toContain(`"${LONG}"`)
+    expect(scripted.calls[1].brief).toContain('3 sentences, at most 2')
+    expect(scripted.calls[1].laws).toEqual(scripted.calls[0].laws)
+    expect((await rows())[0].model).toBe('stub+shorter')
+  })
+
+  it('asks again an answer with a sentence past 28 words, though it is one sentence', async () => {
+    const wordy = 'You may not park your car, truck, van, motorcycle or any other vehicle you happen to be driving anywhere at all within 15 feet of a fire hydrant on any street in the state.'
+    const scripted = model(says(wordy, ['MD-399'], 'road-law'), says('Stay 15 feet from a hydrant.', ['MD-399'], 'road-law'))
+    const answered = await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: scripted.ask }))
+    expect(scripted.calls[1].brief).toContain('a sentence of 34 words, at most 28')
+    expect(answered.body.answer).toBe('Stay 15 feet from a hydrant.')
+  })
+
+  it('allows a question of the consequence shape three sentences, and asks it once', async () => {
+    const three = 'An officer can stop you. It is a $60 ticket. There are no points.'
+    const laws: AskLaw[] = [{ ...LAWS[0], law: 'Parking within 15 feet of a fire hydrant is a $60 fine with no points.' }]
+    const scripted = model(says(three, ['MD-399'], 'road-law'))
+    const answered = await ask(first('what happens if i park by a fire hydrant?', { state: 'MD' }), deps({ lawsFor: async () => laws, askLearner: scripted.ask }))
+    expect(answered.body.answer).toBe(three)
+    expect(scripted.calls).toHaveLength(1)
+  })
+
+  it('asks an answer within the limits once, and records it as the model wrote it', async () => {
+    const scripted = model(says('At least 15 feet.', ['MD-399'], 'road-law'))
+    await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: scripted.ask }))
+    expect(scripted.calls).toHaveLength(1)
+    expect((await rows())[0].model).toBe('stub')
+  })
+
+  it('shows the first answer, already checked, when the shorter one states a figure no law given does', async () => {
+    const scripted = model(says(LONG, ['MD-399'], 'road-law'), says('Park 20 feet away.', ['MD-399'], 'road-law'))
+    const answered = await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: scripted.ask }))
+    expect(answered.body.answer).toBe(LONG)
+    expect((await rows())[0].model).toBe('stub+long')
+  })
+
+  it('shows the first answer when the shorter one is still too long, and never asks a third time', async () => {
+    const scripted = model(says(LONG, ['MD-399'], 'road-law'), says('Park 15 feet away. That is the rule. Check the curb.', ['MD-399'], 'road-law'))
+    const answered = await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: scripted.ask }))
+    expect(answered.body.answer).toBe(LONG)
+    expect(scripted.calls).toHaveLength(2)
+  })
+
+  it('shows the first answer when the shorter ask fails, throws, or comes back out of scope', async () => {
+    const failed = model(says(LONG, ['MD-399'], 'road-law'), { kind: 'failed', model: 'unreachable' })
+    expect((await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: failed.ask }))).body.answer).toBe(LONG)
+    await env.DB.exec('DELETE FROM learner_questions')
+    const strayed = model(says(LONG, ['MD-399'], 'road-law'), says('Park 15 feet away.', ['MD-399'], 'other'))
+    expect((await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: strayed.ask }))).body.answer).toBe(LONG)
+    await env.DB.exec('DELETE FROM learner_questions')
+    let asked = 0
+    const throws: LearnerAsker = async () => {
+      asked += 1
+      if (asked > 1) throw new Error('socket hang up')
+      return says(LONG, ['MD-399'], 'road-law')
+    }
+    expect((await ask(first('how far from a fire hydrant can i park?', { state: 'MD' }), deps({ askLearner: throws }))).body.answer).toBe(LONG)
   })
 })
 
@@ -1468,5 +1567,252 @@ describe('the state’s own page, for the questions no section answers', () => {
       deps({ askLearner: scripted.ask, topics: async () => [], topicLawsFor: async () => [], topicsFor: async () => [], nearLawsNationwide: nearLawsNationwide(ai, index), lawsById: lawsByIdFor(env.DB) }),
     )
     expect(scripted.calls[0].laws?.map((each) => each.id)).toEqual([hydrant.id])
+  })
+})
+
+describe('who asked', () => {
+  const SESSION = '3f2e1d0c-9b8a-4c7d-8e6f-5a4b3c2d1e0f'
+
+  // Without it the Learners tab can only count questions, and cannot say
+  // which learner asked any of them.
+  it('keeps the asking browser’s analytics id with the question, and never hands it to the model', async () => {
+    const scripted = model(says('Twelve.', ['studying']))
+    await ask(first('how many questions?', { session: SESSION }), deps({ askLearner: scripted.ask }))
+
+    const kept = await env.DB.prepare('SELECT session FROM learner_questions').first<{ session: string | null }>()
+    expect(kept?.session).toBe(SESSION)
+    expect(JSON.stringify(scripted.calls)).not.toContain(SESSION)
+  })
+
+  // An id that is not one the app mints would be a free-text column anybody
+  // could write to; a client too old to send one must still be answered.
+  it('stores nothing for an id that is not one, and still answers', async () => {
+    const answered = await ask(first('how many questions?', { session: 'not-an-id' }))
+
+    expect(answered.status).toBe(200)
+    const kept = await env.DB.prepare('SELECT session FROM learner_questions').first<{ session: string | null }>()
+    expect(kept?.session).toBeNull()
+  })
+})
+
+describe('every answer carries its trace, its cost and its time (docs/plans/eval-lifecycle-build.md, phase 1)', () => {
+  const chunk = (id: string, citation: string, law: string): AskLaw => ({
+    id,
+    law,
+    question: '',
+    concept: 'Driver’s license to be carried and exhibited on demand; penalty',
+    citation: `${citation} — '${law}'`,
+    kind: 'statute',
+    asOf: '2026-10-07',
+  })
+  // Texas § 521.025 again: the question's words in (b) and (d) only, the fine
+  // in (c), so the model is given laws the reranker never chose and `given`
+  // differs from `chosen` -- the difference the trace exists to keep.
+  const SECTION: AskLaw[] = [
+    chunk('TX-C-521.025-a', 'Tex. Transp. Code § 521.025(a)', '(a) A person required to hold a license shall have it in the person’s possession while operating a motor vehicle.'),
+    chunk('TX-C-521.025-b', 'Tex. Transp. Code § 521.025(b)', '(b) A peace officer may stop and detain a zebra operator to determine if the person has a license.'),
+    chunk('TX-C-521.025-c', 'Tex. Transp. Code § 521.025(c)', '(c) A person who violates this section commits an offense punishable by a fine not to exceed $200.'),
+    chunk('TX-C-521.025-d', 'Tex. Transp. Code § 521.025(d)', '(d) It is a defense to prosecution if the quokka charged produces in court a quokka license valid at the time.'),
+  ]
+  const OTHER_LAW: AskLaw = {
+    id: 'TX-074',
+    law: 'A zebra must yield to a quokka at a four-way stop.',
+    question: 'Who yields at a four-way stop?',
+    concept: 'right-of-way',
+    citation: "p.40 (printed) — 'yield'",
+  }
+  const FILE = [OTHER_LAW, ...SECTION]
+  const MODEL_USAGE = { input: 1000, output: 50 }
+  const RERANK_USAGE = { input: 200, output: 10 }
+  const REPHRASE_USAGE = { input: 30, output: 5 }
+
+  /** A model that takes a moment, as every real one does, and reports what it spent. */
+  function timedModel(answer: string, sources: string[]): { ask: LearnerAsker; calls: LearnerAskRequest[] } {
+    const calls: LearnerAskRequest[] = []
+    return {
+      calls,
+      ask: async (request) => {
+        calls.push(request)
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        return { kind: 'reply', scope: 'road-law', answer, sources, model: 'stub', usage: MODEL_USAGE }
+      },
+    }
+  }
+  /** Haiku as the reranker: (d) then (b), the rest unranked, and what the call cost. */
+  const rerank: Rerank = async (_question, texts) => {
+    const scores: Scores = texts.map((text) => (text.includes('(d)') ? 2 : text.includes('(b)') ? 1 : Number.NEGATIVE_INFINITY))
+    scores.usage = RERANK_USAGE
+    return scores
+  }
+  const rephrase: Rephrase = async () => Object.assign(['license in possession while driving'], { usage: REPHRASE_USAGE })
+
+  async function texas(scripted: { ask: LearnerAsker }): Promise<{ body: Answered & { questionId?: number } }> {
+    for (const sql of storeStatements('TX', FILE)) await env.DB.prepare(sql).run()
+    const answered = await ask(
+      first('zebra quokka quokka', { state: 'TX' }),
+      deps({ askLearner: scripted.ask, lawsFor: async () => FILE, lawsBySection: lawsBySectionFor(env.DB), rerank, rephrase }),
+    )
+    return answered as { body: Answered & { questionId?: number } }
+  }
+
+  interface Traced {
+    latency_ms: number | null
+    tokens_in: number | null
+    tokens_out: number | null
+    trace: string | null
+    model: string
+  }
+  const traced = async () => (await env.DB.prepare('SELECT latency_ms, tokens_in, tokens_out, trace, model FROM learner_questions').first<Traced>())!
+
+  // Criterion 2 and guard 1. A `given` recorded before the sections were made
+  // whole would put every miss the widening causes down to the model.
+  it('records the laws pooled, chosen and given, the given exactly those the model was sent', async () => {
+    const scripted = timedModel('You can get a ticket with a fine of up to $200.', ['TX-C-521.025-c'])
+    const answered = await texas(scripted)
+    expect(answered.body.answer).toContain('$200')
+
+    const row = await traced()
+    const trace = JSON.parse(row.trace ?? 'null') as { pool: string[]; chosen: string[]; given: string[]; searches: string[] }
+    const ids = new Set(FILE.map((law) => law.id))
+    for (const id of [...trace.pool, ...trace.chosen, ...trace.given]) expect(ids.has(id)).toBe(true)
+    expect(trace.chosen.every((id) => trace.pool.includes(id))).toBe(true)
+    expect(trace.chosen.every((id) => trace.given.includes(id))).toBe(true)
+    expect(trace.given).toEqual(scripted.calls[0].laws?.map((law) => law.id))
+    // The fine is in (c), which the reranker did not choose: it reached the
+    // model only through the section, and the trace has to say so.
+    expect(trace.chosen).not.toContain('TX-C-521.025-c')
+    expect(trace.given).toContain('TX-C-521.025-c')
+    expect(trace.searches).toEqual(['license in possession while driving'])
+  })
+
+  // Criterion 2 and guard 2. A sum of the answering model alone understates
+  // every question's cost by the two Haiku calls before it.
+  it('records the tokens of the model, the reranker and the rephraser together, and the time the turn took', async () => {
+    await texas(timedModel('You can get a ticket with a fine of up to $200.', ['TX-C-521.025-c']))
+    const row = await traced()
+    expect(row.tokens_in).toBe(MODEL_USAGE.input + RERANK_USAGE.input + REPHRASE_USAGE.input)
+    expect(row.tokens_out).toBe(MODEL_USAGE.output + RERANK_USAGE.output + REPHRASE_USAGE.output)
+    expect(row.latency_ms).toBeGreaterThan(0)
+  })
+
+  // The verifier's case: a reranker that came back unreadable was still
+  // billed, and the turn falls back to retrieval's own laws without it.
+  it('counts the tokens of a reranker call that came back unreadable, though the turn fell back past it', async () => {
+    for (const sql of storeStatements('TX', FILE)) await env.DB.prepare(sql).run()
+    const unreadable: Rerank = async () => {
+      throw Object.assign(new Error('the reranker named laws that were not given'), { usage: RERANK_USAGE })
+    }
+    await ask(
+      first('zebra quokka quokka', { state: 'TX' }),
+      deps({ askLearner: timedModel('You can get a ticket with a fine of up to $200.', ['TX-C-521.025-c']).ask, lawsFor: async () => FILE, lawsBySection: lawsBySectionFor(env.DB), rerank: unreadable, rephrase }),
+    )
+    expect((await traced()).tokens_in).toBe(MODEL_USAGE.input + RERANK_USAGE.input + REPHRASE_USAGE.input)
+  })
+
+  // Criterion 3. A refusal is where the trace matters most: it is the answer
+  // somebody will want to put down to a stage.
+  it('records the same trace, tokens and time on a refused answer as on a shown one', async () => {
+    await texas(timedModel('You can get a ticket with a fine of up to $200.', ['TX-C-521.025-c']))
+    const shown = await traced()
+    await env.DB.prepare('DELETE FROM learner_questions').run()
+
+    const refused = await texas(timedModel('You can get a ticket with a fine of up to $975.', ['TX-C-521.025-c']))
+    expect(refused.body.answer).toBeUndefined()
+    const row = await traced()
+    expect(row.model).toBe('road-law:ungrounded')
+    expect(JSON.parse(row.trace ?? 'null')).toEqual(JSON.parse(shown.trace ?? 'null'))
+    expect(row.tokens_in).toBe(shown.tokens_in)
+    expect(row.tokens_out).toBe(shown.tokens_out)
+    expect(row.latency_ms).toBeGreaterThan(0)
+  })
+
+  it('records the book’s sections as the trace of a question with no state', async () => {
+    await ask(first('how many devices?'), deps({ askLearner: model(says('Up to 5 devices.', ['paying'])).ask }))
+    expect(JSON.parse((await traced()).trace ?? 'null')).toEqual({ sources: ['paying'] })
+  })
+})
+
+describe('a learner rates an answer (docs/plans/eval-lifecycle-build.md, decisions 5–6)', () => {
+  const rate = (body: unknown) =>
+    SELF.fetch('https://api.test/api/ask/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  const ratings = async () =>
+    (await env.DB.prepare('SELECT question_id, rating FROM answer_ratings').all<{ question_id: number; rating: number }>()).results ?? []
+  const candidates = async () =>
+    (await env.DB.prepare('SELECT question_id, reason, status FROM eval_candidates').all<{ question_id: number; reason: string; status: string }>()).results ?? []
+  const answered = async () =>
+    (await ask(first('how many devices?'), deps({ askLearner: model(says('Up to 5 devices.', ['paying'])).ask }))).body as Answered & {
+      questionId?: number
+    }
+
+  // Criterion 4 and guard 3. The ids count up from one; a check on the id
+  // alone lets anybody rate every answer the box has given.
+  it('takes a rating from the thread that asked, and answers 404 to any other conversation, writing nothing', async () => {
+    const { questionId } = await answered()
+    expect(questionId).toBeGreaterThan(0)
+
+    const stranger = await rate({ conversation: OTHER, questionId, rating: -1 })
+    expect(stranger.status).toBe(404)
+    expect(await ratings()).toEqual([])
+    expect(await candidates()).toEqual([])
+
+    const own = await rate({ conversation: THREAD, questionId, rating: 1 })
+    expect(own.status).toBe(204)
+    expect(await ratings()).toEqual([{ question_id: questionId, rating: 1 }])
+
+    // A change of mind replaces the rating rather than adding a second.
+    expect((await rate({ conversation: THREAD, questionId, rating: -1 })).status).toBe(204)
+    expect(await ratings()).toEqual([{ question_id: questionId, rating: -1 }])
+  })
+
+  // Criterion 5. A thumbs-up is counted, and never queued for labelling.
+  it('queues a thumbs-down for labelling as rated_down, and a thumbs-up not at all', async () => {
+    const { questionId } = await answered()
+    await rate({ conversation: THREAD, questionId, rating: 1 })
+    expect(await candidates()).toEqual([])
+    await rate({ conversation: THREAD, questionId, rating: -1 })
+    expect(await candidates()).toEqual([{ question_id: questionId, reason: 'rated_down', status: 'open' }])
+  })
+
+  it('refuses a rating that is not 1 or -1, or names no question, with a 400', async () => {
+    const { questionId } = await answered()
+    expect((await rate({ conversation: THREAD, questionId, rating: 5 })).status).toBe(400)
+    expect((await rate({ conversation: THREAD, questionId: 'one', rating: 1 })).status).toBe(400)
+    expect((await rate({ conversation: 'not-a-thread', questionId, rating: 1 })).status).toBe(400)
+    expect(await ratings()).toEqual([])
+  })
+})
+
+describe('the purge takes what was kept beside a question with it (docs/plans/eval-lifecycle-build.md, decision 8)', () => {
+  // Criterion 7 and guard 5. A rating, a score or a label outliving its
+  // question is kept past the retention the privacy page promises.
+  it('removes the rating, score, candidate and label of a purged question, and keeps a live question’s', async () => {
+    const insert = (asked: number, question: string) =>
+      env.DB.prepare(
+        `INSERT INTO learner_questions (conversation, turn, asked_at, lang, state, question, answer, scope, sources, model)
+         VALUES (?, 1, ?, 'en', NULL, ?, 'Yes.', 'app', '[]', 'stub')`,
+      )
+        .bind(asked === NOW ? OTHER : '0f0e0d0c-0b0a-4908-8706-050403020100', asked, question)
+        .run()
+    const old = Number((await insert(NOW - QUESTION_RETENTION_SECONDS - 1, 'old')).meta.last_row_id)
+    const live = Number((await insert(NOW, 'live')).meta.last_row_id)
+    for (const id of [old, live]) {
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO answer_ratings (question_id, rating, rated_at) VALUES (?, -1, ?)').bind(id, NOW),
+        env.DB.prepare('INSERT INTO answer_scores (question_id, scored_at, faithful, relevant) VALUES (?, ?, 1, 1)').bind(id, NOW),
+        env.DB.prepare(`INSERT INTO eval_candidates (question_id, sampled_at, reason) VALUES (?, ?, 'rated_down')`).bind(id, NOW),
+        env.DB.prepare(`INSERT INTO eval_labels (question_id, labelled_at, verdict) VALUES (?, ?, 'right')`).bind(id, NOW),
+      ])
+    }
+
+    await ask(first('new?'), deps({ askLearner: model(says('No.', ['what-this-is'])).ask }))
+
+    for (const table of ['answer_ratings', 'answer_scores', 'eval_candidates', 'eval_labels']) {
+      const left = await env.DB.prepare(`SELECT question_id FROM ${table}`).all<{ question_id: number }>()
+      expect({ table, ids: (left.results ?? []).map((row) => row.question_id) }).toEqual({ table, ids: [live] })
+    }
   })
 })
