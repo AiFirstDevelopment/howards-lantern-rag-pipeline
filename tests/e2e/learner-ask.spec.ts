@@ -30,6 +30,7 @@ interface Sent {
   turnstile: string
   lang: string
   state: string | null
+  session?: string
 }
 
 /** The worker, answering whatever the test says, and recording what it was sent. */
@@ -219,6 +220,21 @@ test.describe('what the worker answers is what is drawn', () => {
     expect(sent[0].turnstile).toBe('a-token')
   })
 
+  // The Learners tab counts who asked and lists their questions by the id
+  // every event of theirs carries; a question sent without it belongs to nobody.
+  test('sends the browser’s analytics id with the question, the same one its events carry', async ({ page }) => {
+    await stubChallenge(page)
+    const sent = await stubAsk(page, [ANSWER])
+    await seed(page, FRESH)
+    await page.goto('/#ask')
+    await askOnPage(page, 'can i use it on my laptop as well?')
+
+    await expect(page.getByTestId('ask-answer')).toContainText('Yes. The recovery code')
+    const id = await page.evaluate(() => localStorage.getItem('teach-and-test/v1/analytics-id'))
+    expect(id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sent[0].session).toBe(id)
+  })
+
   // Guard 14. A refusal of scope is the worker's line, never an answer.
   test('shows the worker’s pointer on a road-law question, and no answer', async ({ page }) => {
     await stubChallenge(page)
@@ -303,6 +319,95 @@ test.describe('the privacy page', () => {
     await expect(learner).toContainText('Anthropic')
     await expect(learner).toContainText('written by a model')
     await expect(page.getByTestId('privacy-partner-questions')).not.toContainText('only free text')
+  })
+
+  // Criterion 8. The thumbs and the trace are two more things kept with a
+  // question; a privacy page that does not say so has quietly stopped being true.
+  test('says an answer can be rated and that the laws considered are kept as citations beside it', async ({ page }) => {
+    await seed(page, FRESH)
+    await page.goto('/#privacy')
+    const learner = page.getByTestId('privacy-learner-questions')
+    await expect(learner).toContainText('rate an answer')
+    await expect(learner).toContainText('the rating is kept with the question')
+    await expect(learner).toContainText('which laws the box considered')
+  })
+})
+
+test.describe('rating an answer (docs/plans/eval-lifecycle-build.md, decision 7)', () => {
+  interface Rated {
+    conversation: string
+    questionId: number
+    rating: number
+  }
+  /** The worker's rating route, keeping every rating it is sent. */
+  async function stubRate(page: Page): Promise<Rated[]> {
+    const rated: Rated[] = []
+    await page.route(`${API}/api/ask/rate`, (route) => {
+      rated.push(route.request().postDataJSON() as Rated)
+      return route.fulfill({ status: 204 })
+    })
+    return rated
+  }
+  const REFUSAL = { id: 'no-match', contact: 'support@example.test', handOff: false, questionId: 42 }
+
+  // Criterion 6. The rating is the one signal a learner gives about an
+  // answer; lost on a reload, the same thumbs would be pressed twice.
+  test('offers two thumbs under a shown answer, sends one rating when one is pressed, and still shows it pressed after a reload', async ({ page }) => {
+    await stubChallenge(page)
+    const sent = await stubAsk(page, [{ ...ANSWER, questionId: 41 }])
+    const rated = await stubRate(page)
+    await seed(page, FRESH)
+    await page.goto('/#ask')
+    await askOnPage(page, 'can i use it on my laptop as well?')
+
+    const answer = page.getByTestId('ask-exchange').first()
+    await expect(answer.getByTestId('ask-answer')).toContainText('Yes. The recovery code')
+    await expect(answer.getByTestId('ask-rate-up')).toHaveAttribute('aria-label', EN.ask.labels.rateUp)
+    await expect(answer.getByTestId('ask-rate-down')).toHaveAttribute('aria-pressed', 'false')
+
+    await answer.getByTestId('ask-rate-down').click()
+    await expect(answer.getByTestId('ask-rate-down')).toHaveAttribute('aria-pressed', 'true')
+    await expect(answer.getByTestId('ask-rate-up')).toHaveAttribute('aria-pressed', 'false')
+    await expect.poll(() => rated.length).toBe(1)
+    expect(rated[0]).toEqual({ conversation: sent[0].conversation, questionId: 41, rating: -1 })
+    // Pressed again, the same thumb is already the rating: nothing is sent.
+    await answer.getByTestId('ask-rate-down').click()
+
+    await page.reload()
+    const kept = page.getByTestId('ask-exchange').first()
+    await kept.getByTestId('ask-exchange-toggle').click()
+    await expect(kept.getByTestId('ask-rate-down')).toHaveAttribute('aria-pressed', 'true')
+    await expect(kept.getByTestId('ask-rate-up')).toHaveAttribute('aria-pressed', 'false')
+    expect(rated).toHaveLength(1)
+  })
+
+  // Criterion 6 and guard 4. A refusal is numbered too, so only the
+  // condition on what was shown keeps thumbs from asking a learner to rate
+  // "I couldn't find that".
+  test('offers no thumbs under a refusal, though the worker numbered it', async ({ page }) => {
+    await stubChallenge(page)
+    await stubAsk(page, [REFUSAL])
+    await stubRate(page)
+    await seed(page, FRESH)
+    await page.goto('/#ask')
+    await askOnPage(page, 'what is the meaning of life?')
+
+    const refusal = page.getByTestId('ask-exchange').first()
+    await expect(refusal.getByTestId('ask-no-match')).toContainText(EN.ask.labels.noMatch)
+    await expect(refusal.getByTestId('ask-rate-up')).toHaveCount(0)
+    await expect(refusal.getByTestId('ask-rate-down')).toHaveCount(0)
+  })
+
+  test('labels the thumbs in Spanish for a Spanish learner', async ({ page }) => {
+    await stubChallenge(page)
+    await stubAsk(page, [{ id: 'answer', answer: 'No. Recibe un código de recuperación en su recibo.', sources: [], questionId: 7 }])
+    await stubRate(page)
+    await chosenSpanish(page)
+    await seed(page, FRESH)
+    await page.goto('/#ask')
+    await askOnPage(page, '¿necesito una cuenta?')
+    await expect(page.getByTestId('ask-rate-up')).toHaveAttribute('aria-label', ES.ask.labels.rateUp)
+    await expect(page.getByTestId('ask-rate-down')).toHaveAttribute('aria-label', ES.ask.labels.rateDown)
   })
 })
 

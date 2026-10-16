@@ -56,4 +56,19 @@ describe('Haiku as the reranker', () => {
     expect(await firstOf(haikuRerankFor(undefined, down), rerankFor(ai))!('q', ['a', 'b'])).toEqual([0.2, 0.8])
     expect(firstOf(haikuRerankFor(undefined), rerankFor(undefined))).toBeUndefined()
   })
+  // The verifier's case (eval-lifecycle phase 1): Haiku naming a law it was
+  // not given was billed, the cross-encoder answered instead, and the turn's
+  // tokens left Haiku's out -- so a day's cost read low exactly on the turns
+  // where something went wrong.
+  it('carries what a Haiku call that could not be read spent onto the cross-encoder’s answer', async () => {
+    const billed = {
+      messages: {
+        create: async () => ({ content: [{ type: 'text', text: '{"ranked":[7]}' }], stop_reason: 'end_turn', usage: { input_tokens: 300, output_tokens: 9 } }),
+      },
+    } as unknown as HaikuClient
+    const ai = { run: async () => ({ response: [{ id: 0, score: 0.2 }, { id: 1, score: 0.8 }] }) } as unknown as Ai
+    const scores = await firstOf(haikuRerankFor(undefined, billed), rerankFor(ai))!('q', ['a', 'b'])
+    expect([...scores]).toEqual([0.2, 0.8])
+    expect(scores.usage).toEqual({ input: 300, output: 9 })
+  })
 })

@@ -16,6 +16,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AskLaw } from './law-retrieval'
 import { embeddingText } from './law-vectors'
+import { Meter, carryingUsage, usageCarried, usageOf, type Usage } from './usage'
 
 export const RERANK_MODEL = '@cf/baai/bge-reranker-base'
 
@@ -69,8 +70,13 @@ export function poolSize(searches: readonly unknown[]): number {
  */
 export const ANSWER_LAWS = 3
 
-/** A score for each text, in the order given. */
-export type Rerank = (question: string, texts: string[]) => Promise<number[]>
+/**
+ * A score for each text, in the order given, and what the call spent where it
+ * went to a model (the cross-encoder on Workers AI reports none): the eval
+ * lifecycle's cost per question counts the reranker too (usage.ts).
+ */
+export type Scores = number[] & { usage?: Usage }
+export type Rerank = (question: string, texts: string[]) => Promise<Scores>
 
 /** The deployed reranker, through the worker's Workers AI binding. */
 export function rerankFor(ai: Ai | undefined): Rerank | undefined {
@@ -126,11 +132,17 @@ export function haikuRerankFor(apiKey: string | undefined, client?: HaikuClient)
       .filter((block) => block.type === 'text')
       .map((block) => (block as Anthropic.TextBlock).text)
       .join('')
-    const ranked = (JSON.parse(text) as { ranked?: unknown }).ranked
-    if (!Array.isArray(ranked) || ranked.some((id) => !Number.isInteger(id) || id < 0 || id >= texts.length)) {
-      throw new Error(`the reranker named laws that were not given: ${text}`)
+    let ranked: unknown
+    try {
+      ranked = (JSON.parse(text) as { ranked?: unknown }).ranked
+      if (!Array.isArray(ranked) || ranked.some((id) => !Number.isInteger(id) || id < 0 || id >= texts.length)) {
+        throw new Error(`the reranker named laws that were not given: ${text}`)
+      }
+    } catch (error) {
+      throw carryingUsage(error, response)
     }
-    const scores = texts.map(() => Number.NEGATIVE_INFINITY)
+    const scores: Scores = texts.map(() => Number.NEGATIVE_INFINITY)
+    scores.usage = usageOf(response)
     ;[...new Set(ranked as number[])].slice(0, HAIKU_RANKS).forEach((id, position) => (scores[id] = HAIKU_RANKS - position))
     return scores
   }
@@ -142,15 +154,23 @@ export function firstOf(...rerankers: (Rerank | undefined)[]): Rerank | undefine
   if (present.length === 0) return undefined
   return async (question, texts) => {
     let last: unknown
+    // What a reranker that failed still spent goes with the answer of the one
+    // that did not: Haiku naming a law it was not given was billed, and the
+    // cross-encoder after it reports nothing.
+    const spent = new Meter()
     for (const rerank of present) {
       try {
-        return await rerank(question, texts)
+        const scores = await rerank(question, texts)
+        if (spent.input + spent.output === 0) return scores
+        spent.add(scores.usage)
+        return Object.assign(scores, { usage: spent.usage })
       } catch (error) {
         console.error('learner ask: a reranker did not answer', error)
+        spent.add(usageCarried(error))
         last = error
       }
     }
-    throw last
+    throw spent.input + spent.output === 0 ? last : Object.assign(last as object, { usage: spent.usage })
   }
 }
 

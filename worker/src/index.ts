@@ -8,10 +8,11 @@ import {
   windowDays,
 } from './analytics'
 import { handleEvent } from './event-sink'
+import { handleEvalIngest } from './eval-ingest'
 import { askerFor } from './ask'
 import { leadAssistFor } from './lead-assist'
 import { handleContact } from './contact'
-import { handleLearnersAsk } from './learner-api'
+import { handleLearnersAsk, handleLearnersRate } from './learner-api'
 import { learnerAskerFor } from './learner-ask'
 import { LAWS_ORIGIN, lawsPath, type AskLaw } from './law-retrieval'
 import { nearLawsFor } from './law-vectors'
@@ -166,6 +167,13 @@ export interface Env {
    * a broken box.
    */
   COARSE?: Fetcher
+  /**
+   * The key CI's eval job presents to `POST /api/eval/runs`, set with
+   * `wrangler secret put EVAL_INGEST_KEY` and as the repository secret of the
+   * same name. Absent, the route answers 503 to everyone: an ingest open
+   * until somebody remembered the secret would take runs from anybody.
+   */
+  EVAL_INGEST_KEY?: string
 }
 
 /**
@@ -295,6 +303,11 @@ export default {
           contact: env.SUPPORT_EMAIL,
         })
       }
+      // A thumbs up or down on one of the box's answers, from the browser
+      // holding its thread (docs/plans/eval-lifecycle-build.md, decision 6).
+      if (url.pathname === '/api/ask/rate' && request.method === 'POST') {
+        return await handleLearnersRate(request, env.DB, cors, () => Math.floor(Date.now() / 1000))
+      }
       // The contact page's form: one email to the operator, nothing stored,
       // the challenge on every send. See worker/src/contact.ts.
       if (url.pathname === '/api/contact' && request.method === 'POST') {
@@ -349,6 +362,12 @@ export default {
       // point of claims.
       if (url.pathname === '/api/mesh/exchange' && request.method === 'POST') {
         return await handleExchange(request, env)
+      }
+      // A whole eval run from CI (docs/plans/eval-lifecycle-build.md, decision
+      // 33). Not a browser either: the ingest key is the authentication, and
+      // without the secret set the route refuses everything.
+      if (url.pathname === '/api/eval/runs' && request.method === 'POST') {
+        return await handleEvalIngest(request, env.DB, env.EVAL_INGEST_KEY, () => Math.floor(Date.now() / 1000))
       }
       // Stripe is not a browser: no CORS, and the signature is the authentication.
       if (url.pathname === '/api/stripe-webhook' && request.method === 'POST') {
@@ -771,7 +790,7 @@ async function handleReferral(
        * -- `git grep branded origin/main -- src worker` is empty. It is kept
        * because of the worker this one replaces, which has no `private_branding`
        * column and sends `partner` for every live code. Pages and the worker
-       * deploy as two steps, and the second is the quiet one
+       * deploy as two steps, and the second is the one CLAUDE.md says is quiet
        * to forget; a client that inferred branding from `partner !== null` would
        * then put every partner's name at the top of every screen, with no switch
        * in existence to take it back down. An absent flag reads as false, which
@@ -1094,6 +1113,14 @@ function adminDeps(env: Env) {
       kb: env.KB,
       now: () => Math.floor(Date.now() / 1000),
       meshPrivateKey: env.MESH_PRIVATE_KEY,
+    },
+    /**
+     * What the labelling card's search reads: the box's own published file
+     * and vector index, so a law the search finds is a law the box could.
+     */
+    evalAdmin: {
+      lawsFor: lawsFromPages,
+      nearLaws: nearLawsFor(env.AI, env.LAWS),
     },
   }
 }

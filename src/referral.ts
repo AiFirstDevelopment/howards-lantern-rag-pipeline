@@ -96,7 +96,7 @@ interface StoredReferral {
    * name". A worker that predates the branding switch sends `partner` for every
    * live code and no flag, so a client that inferred branding from "there is a
    * name" would put every partner's name in the header the moment Pages shipped
-   * ahead of the worker -- the forgotten-second-step failure of a two-step deploy,
+   * ahead of the worker -- the forgotten-second-step failure CLAUDE.md names,
    * and one no partner could switch off, because the column deciding it would
    * not exist yet.
    */

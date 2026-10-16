@@ -2,7 +2,7 @@ import type { Rerank } from './law-rerank'
 import type { Rephrase } from './law-rephrase'
 import type { LawsById, LawsBySection, NearLawsNationwide, PenaltiesFor, ProcessRowsFor } from './law-nationwide'
 import type { ChooseTopics, NationwideTopic, StateLaw } from './law-topics'
-import { MAX_QUESTION_CHARS, MAX_TURNS, QUESTION_RETENTION_SECONDS } from './ask'
+import { HISTORY_TURNS, MAX_QUESTION_CHARS, QUESTION_RETENTION_SECONDS } from './ask'
 import type { AskLaw } from './law-retrieval'
 import { TOKENS_PER_QUESTION } from '../../src/pricing'
 import { balanceOf, debit, normalizeQuestionCode, refund } from './questions'
@@ -17,14 +17,15 @@ import {
   type Scope,
 } from './learner-ask'
 import type { TurnstileVerifier } from './turnstile'
-import { scrub } from './validate'
+import { SESSION, scrub } from './validate'
+import { addCandidate } from './eval-candidates'
 
 /**
  * `POST /api/ask`: the learner's box (docs/plans/learner-ask.md, decision 7).
  *
  * The same shape as `handlePublicAsk` in partner-api.ts -- the id check, the
- * turn cap, the ceiling before the challenge, the challenge on turn one, the
- * turn claimed before the model is asked, the purge on the write path -- against
+ * ceiling before the challenge, the challenge on turn one, the turn claimed
+ * before the model is asked, the purge on the write path -- against
  * its own table rather than a NULL-column convention in `partner_questions`. A
  * learner's question must never appear in the partner box's log or count
  * against its ceiling, and two handlers over one table is how that would
@@ -86,6 +87,8 @@ interface AskBody {
    * any device that holds it.
    */
   code?: string
+  /** The browser's analytics id, the one on its events: who asked, for the Learners tab. */
+  session?: string
 }
 
 const CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -100,6 +103,12 @@ interface Asked {
   credit: string | null
   /** The code the asking browser holds, normalized, whether or not it pays; null when it holds none. */
   held: string | null
+  /**
+   * The asking browser's analytics id, or null from a client too old to send
+   * one -- which is still answered: who asked is the operator's question, not
+   * a reason to refuse the learner's.
+   */
+  session: string | null
 }
 
 function readAsk(body: AskBody | null): Asked | { error: string } {
@@ -115,7 +124,9 @@ function readAsk(body: AskBody | null): Asked | { error: string } {
   // answered as a code with nothing on it -- never quietly as a free question,
   // which would count against a browser that meant to use its tokens.
   const credit = body?.spend === undefined ? null : (normalizeQuestionCode(body.spend) ?? '')
-  return { conversation, question, lang: body?.lang === 'es' ? 'es' : 'en', state, credit, held: normalizeQuestionCode(body?.code) }
+  return { conversation, question, lang: body?.lang === 'es' ? 'es' : 'en', state, credit, held: normalizeQuestionCode(body?.code),
+    session: typeof body?.session === 'string' && SESSION.test(body.session) ? body.session : null,
+  }
 }
 
 /**
@@ -131,21 +142,34 @@ function noTokens(cors: HeadersInit, contact: string): Response {
   return json({ error: 'no tokens left on that code', buy: true, tokens: { left: 0 }, contact }, 402, cors)
 }
 
-/** The thread as it was logged, oldest first: what was asked, and what was shown. */
-async function turnsOf(db: D1Database, conversation: string): Promise<LearnerTurn[]> {
+/**
+ * The thread as it was logged -- the last `HISTORY_TURNS` of it, oldest
+ * first, which is what the model is shown -- and the number this turn takes.
+ *
+ * The number comes from the highest turn written, not from the length of the
+ * window: a conversation past its tenth question still numbers its eleventh
+ * eleven, and a window counted as the thread would hand every turn after the
+ * tenth the same number and refuse it at the unique index.
+ */
+async function turnsOf(db: D1Database, conversation: string): Promise<{ history: LearnerTurn[]; turn: number }> {
+  const last = await db
+    .prepare('SELECT COALESCE(MAX(turn), 0) AS last FROM learner_questions WHERE conversation = ?')
+    .bind(conversation)
+    .first<{ last: number }>()
   const rows = await db
     .prepare(
       `SELECT question, scope, answer, sources FROM learner_questions
-        WHERE conversation = ? ORDER BY turn`,
+        WHERE conversation = ? ORDER BY turn DESC LIMIT ?`,
     )
-    .bind(conversation)
+    .bind(conversation, HISTORY_TURNS)
     .all<{ question: string; scope: string | null; answer: string | null; sources: string | null }>()
-  return (rows.results ?? []).map((row) => ({
+  const history = (rows.results ?? []).reverse().map((row) => ({
     question: row.question,
     scope: row.scope as Scope | null,
     answer: row.answer ?? '',
     sources: row.sources === null ? [] : (JSON.parse(row.sources) as string[]),
   }))
+  return { history, turn: (last?.last ?? 0) + 1 }
 }
 
 /**
@@ -164,6 +188,9 @@ async function pastCeiling(db: D1Database, now: number): Promise<boolean> {
   return (today?.c ?? 0) >= LEARNER_DAILY_QUESTIONS
 }
 
+/** Every table keyed by a learner question's id, cleared of a purged question's rows on the same write. */
+const ORPHANED = ['answer_ratings', 'answer_scores', 'eval_candidates', 'eval_labels'] as const
+
 /**
  * Take this turn, and forget what the retention promise says is old -- on the
  * write path, for the reason `claimTurn` in partner-api.ts gives: a purge that
@@ -176,22 +203,28 @@ async function claimTurn(
   now: number,
   keptUnder: string | null,
 ): Promise<number | null> {
-  await db
-    .prepare('DELETE FROM learner_questions WHERE asked_at < ?')
-    .bind(now - QUESTION_RETENTION_SECONDS)
-    .run()
+  await db.batch([
+    db.prepare('DELETE FROM learner_questions WHERE asked_at < ?').bind(now - QUESTION_RETENTION_SECONDS),
+    // What the eval lifecycle keeps beside a question goes with it
+    // (docs/plans/eval-lifecycle-build.md, decision 8). The ids are never
+    // reused, so an orphan is never misread as another question's -- but a
+    // rating, a score or a label outliving the question it is about is kept
+    // past the 180 days the privacy page promises, and every count of them
+    // includes rows nobody can read back.
+    ...ORPHANED.map((table) => db.prepare(`DELETE FROM ${table} WHERE question_id NOT IN (SELECT id FROM learner_questions)`)),
+  ])
   try {
     const written = await db
       .prepare(
         `INSERT INTO learner_questions
-           (conversation, turn, asked_at, lang, state, question, answer, scope, sources, model, credit_code, paid)
-         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 'asking', ?, ?)`,
+           (conversation, turn, asked_at, lang, state, question, answer, scope, sources, model, credit_code, paid, session)
+         VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 'asking', ?, ?, ?)`,
       )
       // The code with every question its holder asks, free ones too (Joel,
       // 2026-10-12): the code's history is what a second device that holds it
       // shows. Only a code that exists, and only the asking browser's own --
       // a row under a code nobody bought would be a history nobody can read.
-      .bind(asked.conversation, turn, now, asked.lang, asked.state, asked.question, keptUnder, asked.credit === null ? 0 : 1)
+      .bind(asked.conversation, turn, now, asked.lang, asked.state, asked.question, keptUnder, asked.credit === null ? 0 : 1, asked.session)
       .run()
     return Number(written.meta.last_row_id)
   } catch (error) {
@@ -215,15 +248,11 @@ export async function handleLearnersAsk(
   // addition, because the notice above it promises one.
   const asked: Asked = { ...read, question: withoutPhones(scrub(read.question)) }
 
-  const history = await turnsOf(db, asked.conversation)
-  const turn = history.length + 1
-  if (turn > MAX_TURNS) {
-    return json(
-      { error: `a conversation runs to ${MAX_TURNS} questions`, contact: deps.contact },
-      400,
-      cors,
-    )
-  }
+  // The one thing the partner handler does here that this one does not is
+  // end the thread at MAX_TURNS: a learner's question after the free ones is
+  // a paid one, and the prompt is bounded by the window `turnsOf` reads, not
+  // by ending the conversation (`HISTORY_TURNS` in ask.ts).
+  const { history, turn } = await turnsOf(db, asked.conversation)
 
   const now = deps.now()
   // What this question costs, when it is paid for: a nationwide one reads
@@ -274,6 +303,9 @@ export async function handleLearnersAsk(
   }
 
   let answered: Awaited<ReturnType<typeof answerLearner>>
+  // Wall time around the whole turn, the model's calls and the reads between
+  // them, which is what the learner waits for.
+  const started = Date.now()
   try {
     answered = await answerLearner(asked, history, deps)
   } catch (error) {
@@ -282,13 +314,68 @@ export async function handleLearnersAsk(
     await giveBack()
     throw error
   }
+  const latency = Date.now() - started
   const { body: reply, outcome } = answered
   if (REFUNDED.has(outcome.model)) await giveBack()
   await db
-    .prepare('UPDATE learner_questions SET answer = ?, scope = ?, sources = ?, model = ? WHERE id = ?')
-    .bind(outcome.answer, outcome.scope, JSON.stringify(outcome.sources), outcome.model, claimed)
+    .prepare(
+      `UPDATE learner_questions
+          SET answer = ?, scope = ?, sources = ?, model = ?, latency_ms = ?, tokens_in = ?, tokens_out = ?, trace = ?
+        WHERE id = ?`,
+    )
+    .bind(
+      outcome.answer,
+      outcome.scope,
+      JSON.stringify(outcome.sources),
+      outcome.model,
+      latency,
+      outcome.usage.input,
+      outcome.usage.output,
+      JSON.stringify(outcome.trace),
+      claimed,
+    )
     .run()
-  return json({ ...reply, ...tokens(left) }, 200, cors)
+  // The row's id, so the browser that holds the thread can rate this answer
+  // (`handleLearnersRate`). It means nothing outside this table.
+  return json({ ...reply, questionId: claimed, ...tokens(left) }, 200, cors)
+}
+
+interface RateBody {
+  conversation?: unknown
+  questionId?: unknown
+  rating?: unknown
+}
+
+/**
+ * `POST /api/ask/rate`: a thumbs up or down on an answer
+ * (docs/plans/eval-lifecycle-build.md, decision 6).
+ *
+ * Only for a row with that id **and** that conversation, so only the browser
+ * holding the thread can rate it: the ids count up from one, and a check on
+ * the id alone would let anybody rate every answer the box has given. A second
+ * rating replaces the first. A thumbs-down also puts the question in the
+ * labelling queue, once (eval-candidates.ts). No challenge: a rating spends
+ * nothing, and the conversation id is the secret.
+ */
+export async function handleLearnersRate(request: Request, db: D1Database, cors: HeadersInit, now: () => number): Promise<Response> {
+  const body = await readJson<RateBody>(request)
+  const conversation = typeof body?.conversation === 'string' ? body.conversation : ''
+  const questionId = body?.questionId
+  const rating = body?.rating
+  if (!CONVERSATION_ID.test(conversation) || !Number.isSafeInteger(questionId) || (questionId as number) < 1 || (rating !== 1 && rating !== -1)) {
+    return json({ error: 'a conversation, a question id and a rating of 1 or -1 are required' }, 400, cors)
+  }
+  const at = now()
+  const written = await db
+    .prepare(
+      `INSERT OR REPLACE INTO answer_ratings (question_id, rating, rated_at)
+       SELECT id, ?, ? FROM learner_questions WHERE id = ? AND conversation = ?`,
+    )
+    .bind(rating, at, questionId, conversation)
+    .run()
+  if ((written.meta.changes ?? 0) === 0) return json({ error: 'no such answer in this conversation' }, 404, cors)
+  if (rating === -1) await addCandidate(db, questionId as number, 'rated_down', at)
+  return new Response(null, { status: 204, headers: cors })
 }
 
 /** The balance after a paid question, on its answer; nothing on a free one. */

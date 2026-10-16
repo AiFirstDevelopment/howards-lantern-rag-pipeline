@@ -11,6 +11,13 @@ import { RETRIEVED_LAWS, citedPages, pagesNamedIn, retrieve, words, type AskLaw 
 // The attribute is for Node: the e2e suite runs `answerLearner` in-process
 // (tests/e2e/learner-ask-law.spec.ts), and Node refuses a JSON import without it.
 import learnerBank from './learner-knowledge-base.json' with { type: 'json' }
+import { MAX_SENTENCE_WORDS, consequenceShaped, longestSentenceWords, sentencesIn } from './answer-register'
+import { Meter, usageCarried, usageOf, type Usage } from './usage'
+import { TENS, figuresIn, numbersIn } from './figures'
+// Re-exported where they were first defined, so every caller that reads them
+// from here still does; their home is figures.ts, a leaf the admin bundle
+// can import without the SDK and the learner book coming with it.
+export { NUMBER_WORDS, figuresIn, numbersIn } from './figures'
 
 /**
  * The learner's ask box: a model that writes, from a book, under checks
@@ -236,6 +243,16 @@ export interface LearnerAskRequest {
    * what the answer may cite. Absent on every state question.
    */
   nationwide?: NationwideLaws
+  /**
+   * A line for the model after the laws. The state chips' build
+   * (scripts/state-chips-build.ts) sets it on every chip: a stored answer is
+   * held to its sentence and word limits with no learner to rephrase for, and
+   * the build's first run lost 149 of 1,224 right answers to a sentence too
+   * many or too long. `answerLearner` sets it on the one shorter ask after an
+   * answer over the box's limits (`shorterBrief`). Never on a first ask, so
+   * the box's first request is the same without it.
+   */
+  brief?: string
 }
 
 /**
@@ -247,14 +264,18 @@ export interface NationwideLaws {
   topics: { question: string; laws: StateLaw[]; absent: string[]; nearest?: true }[]
 }
 
+/**
+ * `usage` is what the call spent (usage.ts), on a failed call too where one
+ * came back: a reply that would not parse was still billed.
+ */
 export type LearnerReply =
-  | { kind: 'reply'; scope: Scope; answer: string; sources: string[]; model: string }
+  | { kind: 'reply'; scope: Scope; answer: string; sources: string[]; model: string; usage?: Usage }
   /**
    * Why nothing came back: no key, the call failed, a reply that would not
    * parse, or the model's own safeguards declined. Written to the row so a run
    * of outages reads differently from a run of refusals.
    */
-  | { kind: 'failed'; model: 'unavailable' | 'unreachable' | 'unparsed' | 'refused' }
+  | { kind: 'failed'; model: 'unavailable' | 'unreachable' | 'unparsed' | 'refused'; usage?: Usage }
 
 export type LearnerAsker = (request: LearnerAskRequest) => Promise<LearnerReply>
 
@@ -274,7 +295,7 @@ export type LearnerAsker = (request: LearnerAskRequest) => Promise<LearnerReply>
  * (scripts/eval-batch.ts) at half the price, and a batch built from a copy of
  * this would drift from what the worker sends.
  */
-export function learnerRequestFor({ lang, question, history, laws, nationwide }: LearnerAskRequest): Anthropic.MessageCreateParamsNonStreaming {
+export function learnerRequestFor({ lang, question, history, laws, nationwide, brief }: LearnerAskRequest): Anthropic.MessageCreateParamsNonStreaming {
   const prompt = learnerPrompt(lang, nationwide !== undefined)
   return {
     model: LEARNER_ASK_MODEL,
@@ -301,7 +322,7 @@ export function learnerRequestFor({ lang, question, history, laws, nationwide }:
           content: JSON.stringify({ scope: turn.scope ?? 'other', answer: turn.answer, sources: turn.sources }),
         },
       ]),
-      { role: 'user', content: withLaws(question, laws, nationwide) },
+      { role: 'user', content: brief === undefined ? withLaws(question, laws, nationwide) : `${withLaws(question, laws, nationwide)}\n\n${brief}` },
     ],
   }
 }
@@ -312,7 +333,8 @@ export function learnerRequestFor({ lang, question, history, laws, nationwide }:
  * `unreachable`, as it always has.
  */
 export function learnerReplyFrom(response: Anthropic.Message): LearnerReply {
-  if (response.stop_reason === 'refusal') return { kind: 'failed', model: 'refused' }
+  const usage = usageOf(response)
+  if (response.stop_reason === 'refusal') return { kind: 'failed', model: 'refused', usage }
   const text = response.content
     .filter((block) => block.type === 'text')
     .map((block) => block.text)
@@ -324,7 +346,7 @@ export function learnerReplyFrom(response: Anthropic.Message): LearnerReply {
     typeof parsed.answer !== 'string' ||
     !Array.isArray(parsed.sources)
   ) {
-    return { kind: 'failed', model: 'unparsed' }
+    return { kind: 'failed', model: 'unparsed', usage }
   }
   return {
     kind: 'reply',
@@ -332,6 +354,7 @@ export function learnerReplyFrom(response: Anthropic.Message): LearnerReply {
     answer: parsed.answer,
     sources: parsed.sources.filter((id): id is string => typeof id === 'string'),
     model: LEARNER_ASK_MODEL,
+    usage,
   }
 }
 
@@ -344,39 +367,16 @@ export function learnerAskerFor(apiKey: string | undefined, client?: Pick<Anthro
   }
   client ??= new Anthropic({ apiKey })
   return async (request) => {
+    let response: Anthropic.Message | undefined
     try {
-      return learnerReplyFrom(await client.messages.create(learnerRequestFor(request)))
+      response = await client.messages.create(learnerRequestFor(request))
+      return learnerReplyFrom(response)
     } catch (error) {
       console.error('learner ask: could not reach the model', error)
-      return { kind: 'failed', model: 'unreachable' }
+      // A reply that came back as text that is not JSON was still billed.
+      return { kind: 'failed', model: 'unreachable', ...(response === undefined ? {} : { usage: usageOf(response) }) }
     }
   }
-}
-
-/**
- * Small numbers as words, so "three full tests in a row" in a cited section
- * grounds a "3" in the answer. A copy of src/numbers.ts, because the worker and
- * the app are two builds; tests/unit/learner-knowledge-base.test.ts holds the
- * copy to the original.
- */
-export const NUMBER_WORDS: Record<Lang, readonly string[]> = {
-  en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'],
-  es: ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce'],
-}
-
-/**
- * Every number a text states, as digit strings: its digit runs and its spelled
- * small numbers **in the language the text is written in**. One language, not
- * both: the Spanish word for eleven is "once", and an English section that says
- * "Once you have paid" must not ground an "11" in an answer.
- */
-export function numbersIn(text: string, lang: Lang): Set<string> {
-  const found = new Set<string>(text.match(/\d+/g) ?? [])
-  const lower = text.toLowerCase()
-  NUMBER_WORDS[lang].forEach((word, value) => {
-    if (new RegExp(`\\b${word}\\b`, 'u').test(lower)) found.add(String(value))
-  })
-  return found
 }
 
 /** A price in any form the model might write one, a spelled "nine dollars" included. */
@@ -572,113 +572,6 @@ function withStatesLaws(question: string, nationwide: NationwideLaws): string {
     return `On “${topic.question}”, ${what}${topic.absent.length === 0 ? '' : `, and ${topic.absent.length} states with none`}:\n${listed.join('\n')}${absent}`
   })
   return `${question}\n\nAsked across all the states.\n\n${blocks.join('\n\n')}`
-}
-
-/**
- * Spelled figures past twelve, which `NUMBER_WORDS` stops at. Road law is
- * mostly larger numbers -- feet, miles an hour, days -- and "twenty feet" under
- * a citation that says fifteen is the wrong figure on the right page. Each word
- * counts as its own value ("twenty-five" is 20 and 5), so a spelled compound
- * is grounded only where the law spells it too: it fails closed, and the prompt
- * asks for digits.
- */
-const LARGER_WORDS: Record<Lang, Record<string, number>> = {
-  en: {
-    thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
-    twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
-    hundred: 100, thousand: 1000,
-  },
-  es: {
-    trece: 13, catorce: 14, quince: 15, dieciséis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
-    veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90,
-    cien: 100, ciento: 100, mil: 1000,
-  },
-}
-
-/**
- * Every figure a road-law text states: `numbersIn`, the spelled figures above
- * twelve, and Spanish "veinti-" compounds as twenty. "0.02" is read as ".02",
- * the way the manuals write a blood alcohol level, so the leading zero is not
- * an ungrounded figure of its own. The word "one" (or "uno") is not a figure;
- * the digit 1 is.
- */
-export function figuresIn(text: string, lang: Lang): Set<string> {
-  // "1,000" is one figure, not 1 and 000: New York's crash report law spells
-  // "one thousand dollars", and the correct "$1,000" was refused as ungrounded.
-  const normalised = text.replace(/(\d),(?=\d{3}(?!\d))/g, '$1').replace(/\b0(\.\d)/g, '$1')
-  const found = numbersIn(normalised, lang)
-  for (const word of normalised.toLowerCase().match(/\p{L}+/gu) ?? []) {
-    const value = LARGER_WORDS[lang][word]
-    if (value !== undefined) found.add(String(value))
-    else if (lang === 'es' && word.startsWith('veinti')) found.add('20')
-  }
-  if (lang === 'en') for (const value of compounds(normalised)) found.add(String(value))
-  if (lang === 'en') for (const fraction of percentFractions(normalised)) found.add(fraction)
-  // "One" is a pronoun far more often than a figure in a road-law answer --
-  // "within 15 feet of one", "a one-way street" -- and read as 1 it refused a
-  // correct hydrant answer half the time (eval, 2026-10-05). A digit 1 is
-  // still a figure and still has to be grounded.
-  if (!/(^|[^\d.])1(?![\d])/.test(normalised)) found.delete('1')
-  return found
-}
-
-const UNITS: Record<string, number> = {
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
-  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
-}
-const TENS: Record<string, number> = { twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 }
-
-/**
- * Spelled compounds as the whole numbers they are: "five hundred" is 500,
- * "twenty-five" is 25, "one thousand five hundred" is 1500. Statutes spell
- * their figures where the manuals print digits, and the prompt asks the model
- * for digits, so Colorado's "closer than five hundred feet" behind a fire
- * truck read as 5 and 100 and refused the correct "500 feet" as ungrounded.
- * Added beside the word-by-word values, never instead of them, so nothing
- * grounded before stops being grounded: a figure still has to be one the law
- * states. English only, where the codes are.
- */
-function compounds(text: string): number[] {
-  const out: number[] = []
-  let total = 0
-  let chunk = 0
-  let open = false
-  const close = () => {
-    if (open) out.push(total + chunk)
-    total = 0
-    chunk = 0
-    open = false
-  }
-  for (const word of text.toLowerCase().match(/[a-z]+/g) ?? []) {
-    if (UNITS[word] !== undefined) chunk += UNITS[word]
-    else if (TENS[word] !== undefined) chunk += TENS[word]
-    else if (word === 'hundred' && open) chunk = (chunk === 0 ? 1 : chunk) * 100
-    else if (word === 'thousand' && open) (total += (chunk === 0 ? 1 : chunk) * 1000), (chunk = 0)
-    else if (word === 'and' && open) continue
-    else {
-      close()
-      continue
-    }
-    open = true
-  }
-  close()
-  return out
-}
-
-/**
- * A blood-alcohol limit spelled the way Connecticut's code writes it --
- * "eight-hundredths of one per cent" -- as the digits an answer's "0.08" or
- * ".08" is read as: "08". Without it a correct "0.08" was ungroundable against
- * the very section that sets the limit.
- */
-function percentFractions(text: string): string[] {
-  const out: string[] = []
-  for (const match of text.toLowerCase().matchAll(/\b([a-z]+(?:[- ][a-z]+)?)[- ]hundredths? of (?:one|1|a) per ?cent\b/g)) {
-    const [value] = compounds(match[1])
-    if (value === undefined || value >= 100) continue
-    out.push(String(value).padStart(2, '0'))
-  }
-  return out
 }
 
 const ORDINALS: Record<string, number> = {
@@ -889,7 +782,37 @@ export interface LearnerOutcome {
   scope: Scope | null
   sources: string[]
   model: string
+  /** Which laws the turn considered, by id (`AskTrace`). */
+  trace: AskTrace
+  /** Every model call the turn made, summed: the answer, a shorter ask, the rephraser, the reranker, the topic chooser. */
+  usage: Usage
 }
+
+/** What one of the paths below returns; `answerLearner` adds the trace and the usage. */
+type TurnOutcome = Omit<LearnerOutcome, 'trace' | 'usage'>
+
+/**
+ * Which laws a turn considered, written to the row's `trace` beside the answer
+ * (docs/plans/eval-lifecycle-build.md, decision 3), so a wrong answer can be
+ * put down to the stage that lost the right law: not in the pool is
+ * retrieval, in the pool and not chosen is the reranker, chosen and not given
+ * is impossible, given and not used is the model. Law ids only, never their
+ * text and nothing the learner typed, so the column stays small and holds no
+ * more than the sources column already does.
+ *
+ * - A state question: `pool` is what the choice was made from, ranked;
+ *   `chosen` what the reranker (or retrieval, without one) picked; `given`
+ *   exactly the laws the model was sent, after whole sections and the fine
+ *   schedule; `searches` the rephraser's.
+ * - A nationwide question: the topics chosen, or on the index path the laws
+ *   given and the searches.
+ * - No state: the book's sections the answer cited.
+ */
+export type AskTrace =
+  | { pool: string[]; chosen: string[]; given: string[]; searches: string[] }
+  | { topics: string[] }
+  | { given: string[]; searches: string[] }
+  | { sources: string[] }
 
 export interface LearnerPipeline {
   askLearner: LearnerAsker
@@ -951,6 +874,13 @@ export interface LearnerPipeline {
    */
   processRowsFor?: ProcessRowsFor
   contact: string
+  /**
+   * Whether a state road-law answer over the box's sentence limits is asked
+   * once more, shorter (`tooLong`). Absent means it is. The state chips'
+   * build sets it false: it asks its own shorter answer with the stored
+   * answer's tighter brief, and a second retry under it would be a third ask.
+   */
+  shorter?: boolean
 }
 
 /**
@@ -1202,9 +1132,59 @@ export async function answerLearner(
   history: LearnerTurn[],
   pipeline: LearnerPipeline,
 ): Promise<{ body: LearnerBody; outcome: LearnerOutcome; path?: NationwidePath }> {
+  // Every model call is counted where it is made from, so a path added later
+  // that calls the reranker or the model is counted without being told to.
+  const meter = new Meter()
+  // A call that came back unreadable was billed too; its error carries what it spent.
+  const counting = async <T>(call: () => Promise<T>, spent: (result: T) => Usage | undefined): Promise<T> => {
+    try {
+      const result = await call()
+      meter.add(spent(result))
+      return result
+    } catch (error) {
+      meter.add(usageCarried(error))
+      throw error
+    }
+  }
+  const metered: LearnerPipeline = {
+    ...pipeline,
+    askLearner: async (request) => {
+      const reply = await pipeline.askLearner(request)
+      meter.add(reply.usage)
+      return reply
+    },
+    ...(pipeline.rerank === undefined
+      ? {}
+      : {
+          rerank: (question: string, texts: string[]) => counting(() => pipeline.rerank!(question, texts), (scores) => scores.usage),
+        }),
+    ...(pipeline.rephrase === undefined
+      ? {}
+      : {
+          rephrase: (question: string) => counting(() => pipeline.rephrase!(question), (searches) => searches.usage),
+        }),
+    ...(pipeline.topicsFor === undefined
+      ? {}
+      : {
+          topicsFor: (question: string, topics: readonly NationwideTopic[]) =>
+            counting(() => pipeline.topicsFor!(question, topics), (chosen) => (Array.isArray(chosen) ? undefined : chosen.usage)),
+        }),
+  }
+  const traced: { trace?: AskTrace } = {}
+  const answered = await answerTurn(asked, history, metered, traced)
+  const trace = traced.trace ?? { sources: answered.outcome.sources }
+  return { ...answered, outcome: { ...answered.outcome, trace, usage: meter.usage } }
+}
+
+async function answerTurn(
+  asked: { lang: Lang; state: string | null; question: string },
+  history: LearnerTurn[],
+  pipeline: LearnerPipeline,
+  traced: { trace?: AskTrace },
+): Promise<{ body: LearnerBody; outcome: TurnOutcome; path?: NationwidePath }> {
   // Before any state's file is asked for: there is no `/ask-laws/US.json`, and
   // asking for one would refuse every nationwide question as `no-laws`.
-  if (asked.state === NATIONWIDE) return answerNationwide(asked, history, pipeline)
+  if (asked.state === NATIONWIDE) return answerNationwide(asked, history, pipeline, traced)
   let laws: AskLaw[] | null | 'failed' = null
   if (asked.state !== null) {
     try {
@@ -1241,18 +1221,58 @@ export async function answerLearner(
   const fallback = Array.isArray(laws) ? retrieve(laws, asked.question, RETRIEVED_LAWS, near, searches) : []
   const retrieval = Array.isArray(laws) && pipeline.rerank !== undefined ? retrieve(laws, asked.question, poolSize(searches), near, searches) : []
   const pool = Array.isArray(laws) && asked.state !== null && pipeline.rerank !== undefined ? await withFamily(retrieval, asked.state, family, pipeline.processRowsFor) : retrieval
-  const chosen = familyBeside(await chooseLaws(pool, fallback, asked.question, pipeline.rerank), pool, family, [asked.question, ...searches.map((each) => each.search)])
+  const picked = await chooseLaws(pool, fallback, asked.question, pipeline.rerank)
+  const chosen = familyBeside(picked, pool, family, [asked.question, ...searches.map((each) => each.search)])
   const sectioned = Array.isArray(laws) && asked.state !== null ? await wholeSections(chosen, laws, asked.state, pipeline.lawsBySection) : chosen
   const retrieved = pagesLast(Array.isArray(laws) && asked.state !== null ? await withPenalties(sectioned, asked.state, pipeline.penaltiesFor, chosen) : sectioned)
-  const reply = await pipeline.askLearner({
+  if (laws !== null) {
+    // The pool the choice was made from: the reranker's, or -- with no
+    // reranker, or one that failed -- retrieval's own eight, which are other
+    // laws than the pool's first eight (`chooseLaws`). A family row given
+    // beside the choice came from the reranker's pool, so it is added after.
+    const from = picked === fallback ? fallback : pool
+    const ids = (each: AskLaw[]) => each.map((law) => law.id)
+    traced.trace = {
+      pool: [...new Set([...ids(from), ...ids(chosen)])],
+      chosen: ids(chosen),
+      given: ids(retrieved),
+      searches: searches.map((each) => each.search),
+    }
+  }
+  const request: LearnerAskRequest = {
     lang: asked.lang,
     question: asked.question,
     history,
     laws: laws === null ? null : retrieved,
-  })
+  }
+  const reply = await pipeline.askLearner(request)
 
   if (reply.kind === 'reply' && reply.scope === 'road-law') {
-    const checked = checkLawAnswer(reply, asked.lang, laws, retrieved, asked.question)
+    let checked = checkLawAnswer(reply, asked.lang, laws, retrieved, asked.question)
+    let model = reply.model
+    // An answer the checks pass but that runs past the box's sentence limits
+    // is asked once more, with its draft, to say it shorter. The whole eval
+    // on #802's wording lost 9 right answers to a third sentence or one past
+    // 28 words, and no prompt wording held all of them under. The shorter
+    // answer replaces the first only if it passes every check and the limits;
+    // otherwise the first, already checked, is shown as it always was.
+    const long = checked.ok && pipeline.shorter !== false ? tooLong(checked.answer, asked.question) : []
+    if (checked.ok && long.length > 0) {
+      const most = sentenceLimit(asked.question)
+      const again = await pipeline
+        .askLearner({ ...request, brief: shorterBrief(asked.lang, most, checked.answer, long) })
+        .catch((): LearnerReply => ({ kind: 'failed', model: 'unreachable' }))
+      if (again.kind === 'reply' && again.scope === 'road-law') {
+        const rechecked = checkLawAnswer(again, asked.lang, laws, retrieved, asked.question)
+        if (rechecked.ok && tooLong(rechecked.answer, asked.question).length === 0) {
+          checked = rechecked
+          model = `${again.model}+shorter`
+        }
+      }
+      // Recorded either way, so the log tells a first answer that was too
+      // long and could not be shortened from one that was never too long.
+      if (model === reply.model) model = `${reply.model}+long`
+    }
     if (checked.ok) {
       return {
         body: {
@@ -1265,7 +1285,7 @@ export async function answerLearner(
             ...(law.asOf === undefined ? {} : { asOf: law.asOf }),
           })),
         },
-        outcome: { answer: checked.answer, scope: 'road-law', sources: checked.laws.map((law) => law.id), model: reply.model },
+        outcome: { answer: checked.answer, scope: 'road-law', sources: checked.laws.map((law) => law.id), model },
       }
     }
     return {
@@ -1275,6 +1295,34 @@ export async function answerLearner(
     }
   }
   return answerFromBook(reply, asked.lang, history, pipeline.contact, asked.question)
+}
+
+/** The most sentences a state road-law answer to `question` may have: three for a question of the consequence shape, two for every other. */
+export function sentenceLimit(question: string): number {
+  return consequenceShaped(question) ? 3 : 2
+}
+
+/**
+ * What is too long about a state road-law answer, in the words the shorter
+ * ask quotes back to the model: a sentence too many, or one past
+ * MAX_SENTENCE_WORDS. The same counts the eval's register verdict scores
+ * (answer-register.ts), so an answer the box let stand is one it scores.
+ */
+export function tooLong(answer: string, question: string): string[] {
+  const out: string[] = []
+  const most = sentenceLimit(question)
+  const count = sentencesIn(answer)
+  if (count > most) out.push(`${count} sentences, at most ${most}`)
+  const longest = longestSentenceWords(answer)
+  if (longest > MAX_SENTENCE_WORDS) out.push(`a sentence of ${longest} words, at most ${MAX_SENTENCE_WORDS}`)
+  return out
+}
+
+/** The line after the laws on the one shorter ask: the draft, why it was too long, and the limit as a number. */
+export function shorterBrief(lang: Lang, most: number, draft: string, problems: readonly string[]): string {
+  return lang === 'es'
+    ? `Una primera respuesta a esta pregunta era demasiado larga (${problems.join('; ')}). Decía: "${draft}". Responda otra vez desde las mismas leyes, con las mismas cifras, en ${most} oraciones como máximo, cada una de menos de 20 palabras: quite lo que no se preguntó en vez de agregar una oración.`
+    : `A first answer to this question was too long (${problems.join('; ')}). It read: "${draft}". Answer again from the same laws, with the same figures, in at most ${most} sentences, each under 20 words: cut what was not asked rather than add a sentence.`
 }
 
 /**
@@ -1300,7 +1348,8 @@ async function answerNationwide(
   asked: { lang: Lang; question: string },
   history: LearnerTurn[],
   pipeline: LearnerPipeline,
-): Promise<{ body: LearnerBody; outcome: LearnerOutcome; path: NationwidePath }> {
+  traced: { trace?: AskTrace },
+): Promise<{ body: LearnerBody; outcome: TurnOutcome; path: NationwidePath }> {
   let given: NationwideLaws | 'failed'
   let path: NationwidePath = 'topic'
   try {
@@ -1310,8 +1359,12 @@ async function answerNationwide(
     const { topics: chosen } = await chooseTopics(asked.question, topics, pipeline.topicsFor)
     if (chosen.length === 0 && nearLawsNationwide !== undefined && lawsById !== undefined) {
       path = 'index'
-      given = await nearestInEveryState(asked.question, nearLawsNationwide, lawsById, pipeline.rephrase)
+      const searched: string[] = []
+      traced.trace = { given: [], searches: searched }
+      given = await nearestInEveryState(asked.question, nearLawsNationwide, lawsById, pipeline.rephrase, searched)
+      traced.trace = { given: given.topics.flatMap((topic) => topic.laws.map((law) => law.id)), searches: searched }
     } else {
+      traced.trace = { topics: chosen }
       given = {
         topics: await Promise.all(
           chosen.map(async (id) => {
@@ -1419,6 +1472,8 @@ async function nearestInEveryState(
   near: NearLawsNationwide,
   lawsById: LawsById,
   rephrase: Rephrase | undefined,
+  /** Filled with the rephraser's searches for the trace, before anything below can throw. */
+  searched: string[],
 ): Promise<NationwideLaws> {
   let searches: string[] = []
   if (rephrase !== undefined) {
@@ -1428,6 +1483,7 @@ async function nearestInEveryState(
       console.error('learner ask: the rephraser did not answer', error)
     }
   }
+  searched.push(...searches)
   const hits = await near(question, searches)
   const ids = Object.values(hits).flat()
   const stored = new Map((ids.length === 0 ? [] : await lawsById(ids)).map((law) => [law.id, law]))
@@ -1499,7 +1555,7 @@ function answerFromBook(
    * comparison, and "will my parents find out" is not one.
    */
   question?: string,
-): { body: LearnerBody; outcome: LearnerOutcome } {
+): { body: LearnerBody; outcome: TurnOutcome } {
   const handOff = missedTwice(history)
   const other = question === undefined ? null : checkOtherAnswer(reply, lang, question)
   if (other !== null && reply.kind === 'reply') {

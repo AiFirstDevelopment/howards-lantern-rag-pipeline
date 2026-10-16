@@ -8,6 +8,7 @@
  *   npm run laws:store -- --push MD           the same, for one state
  *   npm run laws:store -- --push --all        every state, whatever the manifest says: a database that has never been filled
  *   npm run laws:store -- --push --local      to the local D1 `wrangler dev` uses, rather than production
+ *   npm run laws:store -- --push MD --no-eval the push without the retrieval eval it ends with
  *
  * The rows are exactly what Pages publishes at /ask-laws/<CODE>.json and what
  * `laws:embed` embeds: `lawsOf`, plus the state. The index returns an id, and
@@ -27,6 +28,12 @@
  *
  * Pushing is the one thing here that changes something outside the
  * repository, so it is off unless asked for, as in scripts/law-vectors.ts.
+ *
+ * Each state pushed ends with the retrieval eval for it (scripts/push-eval.ts,
+ * docs/plans/eval-lifecycle-build.md, decision 35), and its recall@pool and
+ * MRR are written beside the hash as `evalRecall` and `evalMrr` -- `null`,
+ * with the reason printed, for a state with nothing to score or a run that
+ * could not be made. `--no-eval` leaves them as they were.
  */
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -37,6 +44,7 @@ import { fileURLToPath } from 'node:url'
 import { STORE_STATEMENT_BYTES, sectionOf, storeStatements } from '../worker/src/law-nationwide'
 import type { AskLaw } from '../worker/src/law-retrieval'
 import { statesOf } from './law-vectors'
+import { evalLine, harnessEval, skipsEval, withFigures, type EvalFigures, type Evaluate } from './push-eval'
 // What Pages publishes, the state's own pages included: the family lookup reads
 // them from the table.
 import { publishedLawsOf as lawsOf } from './statutes/laws'
@@ -50,7 +58,7 @@ const DATABASE = 'learners-permit'
 
 export interface StoreManifest {
   table: string
-  states: Record<string, { laws: number; sha256: string }>
+  states: Record<string, { laws: number; sha256: string } & Partial<EvalFigures>>
 }
 
 /**
@@ -198,7 +206,7 @@ export function staleStates(root: string, manifest: StoreManifest, only: readonl
 export async function run(
   root: string,
   args: readonly string[],
-  options: { store?: () => Store; manifestFile?: string; log?: (line: string) => void } = {},
+  options: { store?: () => Store; manifestFile?: string; log?: (line: string) => void; evaluate?: Evaluate } = {},
 ): Promise<number> {
   const log = options.log ?? console.log
   const file = options.manifestFile ?? path.join(root, MANIFEST_FILE)
@@ -218,13 +226,25 @@ export async function run(
     return 1
   }
   const store = options.store?.() ?? (args.includes('--local') ? localStore(root) : restStore(root))
+  const skipping = skipsEval(args)
+  const evaluate = options.evaluate ?? harnessEval(root)
+  const write = () => writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n')
   for (const code of stale) {
     const laws = lawsOf(root, code)
     await pushState(store, code, laws)
-    manifest.states[code] = { laws: laws.length, sha256: fingerprint(code, laws) }
+    const previous = manifest.states[code]
+    const entry = { laws: laws.length, sha256: fingerprint(code, laws) }
+    // Null until this push's eval says otherwise: a run that dies in the eval
+    // must not leave the last corpus's figures beside this corpus's hash.
+    manifest.states[code] = withFigures(entry, previous, skipping ? 'skipped' : { evalRecall: null, evalMrr: null })
     // Written after every state, so a run that dies half way records what it did.
-    writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n')
+    write()
     log(`${code}: ${laws.length} laws`)
+    if (skipping) continue
+    const result = evaluate(code)
+    manifest.states[code] = withFigures(entry, previous, result)
+    write()
+    log(evalLine(code, result))
   }
   return 0
 }

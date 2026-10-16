@@ -4,7 +4,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { statesOf } from '../../scripts/law-vectors'
 import type { Store } from '../../scripts/laws-store'
-import { fetchState, pushState, type Picker } from '../../scripts/process/fetch'
+import { fetchState, pushState, type Picker, storedEntry } from '../../scripts/process/fetch'
 import {
   MAX_PASSAGES,
   PROCESS_FAMILIES,
@@ -362,5 +362,21 @@ describe('the monthly check of the states’ own pages', () => {
     rmSync(root, { recursive: true, force: true })
     expect(report.families['ticket-procedure']).toMatchObject({ status: 'unreachable', error: `${TICKET_URL} answered 503` })
     expect(report.status).toBe('unreachable')
+  })
+})
+
+describe('a page push keeps the state’s retrieval figures honest', () => {
+  // process:fetch --push rewrote the entry as {laws, sha256} and dropped the
+  // figures laws:store and laws:embed record beside the hash.
+  it('keeps the figures while the hash is the one they were measured on', () => {
+    expect(storedEntry({ laws: 10, sha256: 'a', evalRecall: 0.9, evalMrr: 0.8 }, 10, 'a')).toEqual({ laws: 10, sha256: 'a', evalRecall: 0.9, evalMrr: 0.8 })
+  })
+
+  it('nulls them when the pages moved the hash, never an old figure beside a new hash', () => {
+    expect(storedEntry({ laws: 10, sha256: 'a', evalRecall: 0.9, evalMrr: 0.8 }, 12, 'b')).toEqual({ laws: 12, sha256: 'b', evalRecall: null, evalMrr: null })
+  })
+
+  it('adds no figures to a state that never had any', () => {
+    expect(storedEntry({ laws: 10, sha256: 'a' }, 12, 'b')).toEqual({ laws: 12, sha256: 'b' })
   })
 })

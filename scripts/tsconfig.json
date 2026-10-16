@@ -44,5 +44,9 @@
   //
   // `es/` is the Spanish pack passes, listed for the same reason: they write the
   // file a Spanish learner reads, and nothing else would see them fail to compile.
-  "include": ["partners.ts", "argv.ts", "build-kb.ts", "kb-push.ts", "mesh-key.ts", "mesh-dev.ts", "ask-eval.ts", "es/*.ts", "leads/*.ts", "leads/sources/*.ts", "statutes/*.ts", "statutes/sites/*.ts", "law-vectors.ts", "laws-store.ts", "live.ts"]
+  //
+  // The learner eval's scripts are listed because the suite never runs them
+  // (each run costs money): a harness that no longer compiled would be found
+  // on the paid run that needed it, and `eval:gold` rewrites the fixture.
+  "include": ["partners.ts", "argv.ts", "build-kb.ts", "kb-push.ts", "mesh-key.ts", "mesh-dev.ts", "ask-eval.ts", "es/*.ts", "leads/*.ts", "leads/sources/*.ts", "statutes/*.ts", "statutes/sites/*.ts", "law-vectors.ts", "laws-store.ts", "live.ts", "public-mirror.ts", "learner-ask-eval.ts", "eval-stage.ts", "eval-gold.ts", "eval-cost.ts", "eval-accept.ts", "eval-cases.ts", "eval-judge.ts", "eval-calibrate.ts", "push-eval.ts"]
 }
